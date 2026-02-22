@@ -1,0 +1,11 @@
+.pendingBanner {
+  background: var(--color-warning-bg, #fef3c7);
+  color: var(--color-warning-text, #92400e);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.main {
+  flex: 1;
+}

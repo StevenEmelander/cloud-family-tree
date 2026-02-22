@@ -1,0 +1,75 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+.nyc_output/
+
+# Next.js
+.next/
+out/
+build/
+
+# Production
+dist/
+*.tsbuildinfo
+
+# Misc
+.DS_Store
+*.pem
+*.ged
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local env files
+.env*.local
+.env
+
+# Active deployment config — gitignored so each deployer maintains their own.
+# Copy config.example.ts (blank template) or config.emelander.ts (real example)
+# to config.ts and edit with your values before deploying.
+config.ts
+config.personal.ts
+
+# TypeScript
+next-env.d.ts
+
+# Turborepo
+.turbo/
+
+# CDK
+cdk.out/
+.cdk.staging/
+tmp/
+
+# Lambda deploy artifacts
+.lambda-deploy/
+temp-lambda/
+temp-lambda.zip
+
+# Private/one-off scripts — not part of the public project
+audit_gedcom.js
+deploy-lambdas.mjs
+scripts/gedcom-v6.js
+
+# Private docs directory
+docs/
+
+# Lockfiles (project uses pnpm)
+package-lock.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db

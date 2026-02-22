@@ -1,0 +1,251 @@
+.nav {
+  background: var(--color-card);
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.brand:hover {
+  text-decoration: none;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.navBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 0.75rem;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--color-fg-muted);
+  font-size: 0.813rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.navBtn:hover {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  text-decoration: none;
+}
+
+.signInLink {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 1rem;
+  background: var(--color-primary);
+  color: white;
+  border-radius: 9999px;
+  font-size: 0.813rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.signInLink:hover {
+  background: var(--color-primary-dark);
+  text-decoration: none;
+}
+
+/* Dropdown trigger */
+
+.dropdown {
+  position: relative;
+}
+
+.menuBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.menuBtn:hover {
+  background: var(--color-bg);
+  color: var(--color-fg);
+}
+
+.menuIcon {
+  width: 24px;
+  height: 24px;
+}
+
+/* Invisible bridge so hover is maintained when moving from button to menu */
+.dropdown::after {
+  content: '';
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  top: 100%;
+  height: 10px;
+  display: none;
+}
+
+.dropdown:hover::after {
+  display: block;
+}
+
+/* Dropdown panel */
+
+.dropdownMenu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 200px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
+  z-index: 200;
+  padding: 6px;
+  animation: dropdownIn 0.15s ease-out;
+}
+
+@keyframes dropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dropdown:hover .dropdownMenu,
+.dropdown:focus-within .dropdownMenu {
+  display: block;
+}
+
+/* Header with name + role */
+
+.menuHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem 0.5rem;
+}
+
+.menuName {
+  font-size: 0.813rem;
+  font-weight: 700;
+  color: var(--color-fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menuRole {
+  font-size: 0.688rem;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+.menuRoleAdmin {
+  color: #1e40af;
+  background: #dbeafe;
+}
+
+.menuRoleEditor {
+  color: #065f46;
+  background: #d1fae5;
+}
+
+.menuRoleVisitor {
+  color: #4b5563;
+  background: #f3f4f6;
+}
+
+/* Groups with dividers */
+
+.menuGroup {
+  border-top: 1px solid var(--color-border);
+  padding: 4px 0;
+}
+
+/* Menu items */
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.813rem;
+  color: var(--color-fg);
+  text-decoration: none;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.dropdownItem:hover {
+  background: var(--color-bg);
+  text-decoration: none;
+}
+
+.itemIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--color-secondary);
+}
+
+.dropdownItem:hover .itemIcon {
+  color: var(--color-fg);
+}
+
+.signOutItem {
+  color: var(--color-secondary);
+}
+
+.signOutItem:hover {
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.signOutItem:hover .itemIcon {
+  color: #dc2626;
+}

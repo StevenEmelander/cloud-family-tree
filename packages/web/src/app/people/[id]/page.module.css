@@ -1,0 +1,556 @@
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.profileHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.profileHeader h1 {
+  font-size: 1.75rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--color-border);
+  margin-bottom: 1.5rem;
+}
+
+.tab {
+  padding: 0.625rem 1.25rem;
+  border: none;
+  background: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.tab:hover {
+  color: var(--color-fg);
+}
+
+.tabActive {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.detailsCard {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detailRow {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9375rem;
+}
+
+.detailLabel {
+  font-weight: 600;
+  min-width: 80px;
+  color: var(--color-secondary);
+}
+
+.section {
+  margin-bottom: 1.5rem;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.sectionHeader h2 {
+  font-size: 1.25rem;
+  color: var(--color-fg);
+}
+
+.relList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.relItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.relLinkWrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.relLink {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  color: var(--color-fg);
+  transition: border-color 0.2s;
+}
+
+.relLink:hover {
+  border-color: var(--color-primary);
+  text-decoration: none;
+}
+
+.relName {
+  font-weight: 500;
+}
+
+.relLifespan {
+  font-size: 0.8125rem;
+  color: var(--color-secondary);
+  white-space: nowrap;
+}
+
+.spouseMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  padding: 0.25rem 1rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-secondary);
+}
+
+.emptyRel {
+  font-size: 0.875rem;
+  color: var(--color-secondary);
+  font-style: italic;
+}
+
+.error {
+  color: #dc2626;
+  background: #fef2f2;
+  padding: 1rem;
+  border-radius: var(--radius);
+}
+
+/* Edit button */
+
+.btnEdit {
+  padding: 0.375rem 1rem;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btnEdit:hover {
+  background: var(--color-primary-dark);
+}
+
+.btnDoneEditing {
+  padding: 0.375rem 1rem;
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btnDoneEditing:hover {
+  background: rgba(59, 130, 246, 0.06);
+}
+
+/* Edit form */
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.editError {
+  color: #dc2626;
+  font-size: 0.8125rem;
+  background: #fef2f2;
+  padding: 0.625rem;
+  border-radius: var(--radius);
+  margin-bottom: 0.25rem;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.formLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.formInput,
+.formSelect {
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  background: white;
+}
+
+.formInput:focus,
+.formSelect:focus,
+.formTextarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.formTextarea {
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.formActions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.btnSave {
+  padding: 0.5rem 1.25rem;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btnSave:hover {
+  background: var(--color-primary-dark);
+}
+
+.btnSave:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btnCancel {
+  padding: 0.5rem 1.25rem;
+  background: transparent;
+  color: var(--color-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btnCancel:hover {
+  background: var(--color-bg);
+}
+
+.btnCancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Relationship management */
+
+.btnAdd {
+  padding: 0.25rem 0.75rem;
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btnAdd:hover {
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.btnRemoveRel {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: #dc2626;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-size: 1.125rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.btnRemoveRel:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.confirmDelete {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-left: auto;
+}
+
+.confirmText {
+  font-size: 0.8125rem;
+  color: #dc2626;
+  font-weight: 500;
+}
+
+.btnConfirmYes {
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btnConfirmYes:hover {
+  background: #b91c1c;
+}
+
+.btnConfirmNo {
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  background: var(--color-surface);
+  color: var(--color-fg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.btnConfirmNo:hover {
+  background: var(--color-bg);
+}
+
+/* Field validation errors */
+
+.formInputError {
+  border-color: #dc2626;
+}
+
+.formInputError:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15);
+}
+
+.fieldError {
+  font-size: 0.75rem;
+  color: #dc2626;
+}
+
+/* Spouse edit button */
+
+.btnEditRel {
+  padding: 0.125rem 0.5rem;
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.6875rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.btnEditRel:hover {
+  border-color: var(--color-primary);
+  background: rgba(59, 130, 246, 0.06);
+}
+
+/* Spouse metadata edit form */
+
+.spouseMetaForm {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  margin-top: 0.375rem;
+  margin-bottom: 0.25rem;
+}
+
+.spouseMetaGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.625rem;
+  margin-bottom: 0.625rem;
+}
+
+/* Entries */
+
+.entryForm {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.entryTextarea {
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.entryTextarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.entryFormActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.entryCharCount {
+  font-size: 0.75rem;
+  color: var(--color-secondary);
+}
+
+.entryList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.entryCard {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.875rem 1rem;
+}
+
+.entryHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.entryAuthor {
+  font-weight: 600;
+  font-size: 0.8125rem;
+}
+
+.entryDate {
+  font-size: 0.75rem;
+  color: var(--color-secondary);
+}
+
+.entryActions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.entryContent {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.entryEditForm {
+  margin-top: 0.375rem;
+}
+
+/* Responsive tab labels */
+.tabFull {
+  display: inline;
+}
+
+.tabShort {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .tabFull {
+    display: none;
+  }
+
+  .tabShort {
+    display: inline;
+  }
+}
+
+/* Issues tab highlight */
+.tabHighlight {
+  color: var(--color-danger);
+}
+
+.tabHighlight.tabActive {
+  border-bottom-color: var(--color-danger);
+}
+
+/* Add Entry button for wall */
+.addEntryBtn {
+  padding: 0.375rem 0.75rem;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.813rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+
+.addEntryBtn:hover {
+  background: var(--color-primary-dark);
+}

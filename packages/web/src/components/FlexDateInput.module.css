@@ -1,0 +1,38 @@
+.flexDate {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.flexDateYear {
+  width: 4rem;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.flexDateYear:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.flexDateSelect {
+  padding: 0.375rem 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.8125rem;
+  background: var(--color-card);
+  color: var(--color-fg);
+}
+
+.flexDateSelect:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.flexDateSelect:disabled {
+  opacity: 0.5;
+}

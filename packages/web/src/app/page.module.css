@@ -1,0 +1,310 @@
+/* ---- Page layout ---- */
+.page {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Hero banner ---- */
+.hero {
+  background:
+    linear-gradient(160deg, #065f46 0%, #059669 50%, #34d399 100%);
+  color: #fff;
+  padding: 3.5rem 1.5rem 3rem;
+  text-align: center;
+}
+
+.heroInner {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.heroEyebrow {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  opacity: 0.8;
+  margin-bottom: 0.5rem;
+}
+
+.heroTitle {
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  margin-bottom: 1rem;
+}
+
+.heroDivider {
+  width: 48px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 2px;
+  margin: 0 auto 1rem;
+}
+
+.heroBody {
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  opacity: 0.92;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+/* ---- Content area ---- */
+.content {
+  max-width: 780px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+}
+
+/* ---- Search section ---- */
+.searchSection {
+  margin-bottom: 2rem;
+}
+
+.searchHeading {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--color-fg);
+}
+
+.searchForm {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.searchInput {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: var(--color-card);
+}
+
+.searchInput:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+}
+
+.searchButton {
+  padding: 0.75rem 1.75rem;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.searchButton:hover {
+  background: var(--color-primary-dark);
+}
+
+.searchButton:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+/* ---- Results ---- */
+.results {
+  margin-bottom: 2rem;
+}
+
+.resultCount {
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  margin-bottom: 0.75rem;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 2rem;
+  color: var(--color-secondary);
+  background: var(--color-card);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+.personCard {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.875rem 1.125rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.personCard:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  text-decoration: none;
+}
+
+.personName {
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.personLifespan {
+  font-size: 0.8125rem;
+  color: var(--color-secondary);
+  white-space: nowrap;
+}
+
+/* ---- Pagination ---- */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.paginationBtn {
+  padding: 0.5rem 1.25rem;
+  background: var(--color-card);
+  color: var(--color-fg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.paginationBtn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: var(--color-bg);
+}
+
+.paginationBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pageNumber {
+  font-size: 0.8125rem;
+  color: var(--color-secondary);
+}
+
+/* ---- Call to action ---- */
+.cta {
+  border-top: 1px solid var(--color-border);
+  padding-top: 1.75rem;
+}
+
+.ctaHeading {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--color-fg);
+}
+
+.ctaBody {
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--color-secondary);
+}
+
+.ctaBody a {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+/* ---- Skeleton loading ---- */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.resultCountSkeleton {
+  width: 120px;
+  height: 0.8125rem;
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(90deg, var(--color-border) 25%, var(--color-card) 50%, var(--color-border) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+.skeletonCard {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.875rem 1.125rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.skeletonName {
+  width: 55%;
+  height: 0.9375rem;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--color-border) 25%, var(--color-card) 50%, var(--color-border) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+.skeletonLifespan {
+  width: 60px;
+  height: 0.8125rem;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--color-border) 25%, var(--color-card) 50%, var(--color-border) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+/* ---- Status / error ---- */
+.error {
+  text-align: center;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  color: #dc2626;
+  background: #fef2f2;
+  border-radius: var(--radius);
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 540px) {
+  .hero {
+    padding: 2.5rem 1rem 2rem;
+  }
+
+  .heroTitle {
+    font-size: 1.875rem;
+  }
+
+  .content {
+    padding: 1.5rem 1rem 2rem;
+  }
+
+  .searchForm {
+    flex-direction: column;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,25 @@
+.wrapper {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.qualifierSelect {
+  padding: 0.375rem 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.8125rem;
+  background: var(--color-card);
+  color: var(--color-fg);
+  min-width: 5rem;
+}
+
+.qualifierSelect:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.qualifierSelect:disabled {
+  opacity: 0.5;
+}
