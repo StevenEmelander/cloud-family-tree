@@ -14,7 +14,6 @@ src/
     gedcom/          # GEDCOM import/export
     auth/            # Auth helpers (token verification)
     admin/           # User management (admin-only)
-    test-helpers.ts  # Shared makeEvent() factory
   services/          # Business logic, validation, orchestration
   repositories/      # DynamoDB access, key construction
   middleware/        # auth.ts, response.ts, error-handler.ts
@@ -195,4 +194,4 @@ function makePerson(overrides: Partial<Person> = {}): Person {
 }
 ```
 
-The shared `makeEvent()` helper for API Gateway events lives in `src/handlers/test-helpers.ts`.
+The shared `makeEvent()` helper for API Gateway events lives in `tests/helpers/test-helpers.ts`.

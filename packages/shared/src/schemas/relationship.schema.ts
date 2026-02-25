@@ -1,16 +1,16 @@
 import { z } from 'zod';
 import { RelationshipType } from '../types/relationship';
+import { flexDatePattern, isValidFlexDate } from '../utils/date.utils';
 
-// Accepts YYYY, YYYY-MM, or YYYY-MM-DD
-const flexDatePattern = /^\d{4}(-\d{2}(-\d{2})?)?$/;
+const flexDate = z
+  .string()
+  .regex(flexDatePattern, 'Must be YYYY, YYYY-MM, or YYYY-MM-DD')
+  .refine(isValidFlexDate, 'Invalid date');
 
 export const relationshipMetadataSchema = z.object({
-  marriageDate: z
-    .string()
-    .regex(flexDatePattern, 'Must be YYYY, YYYY-MM, or YYYY-MM-DD')
-    .optional(),
+  marriageDate: flexDate.optional(),
   marriagePlace: z.string().max(200).trim().optional(),
-  divorceDate: z.string().regex(flexDatePattern, 'Must be YYYY, YYYY-MM, or YYYY-MM-DD').optional(),
+  divorceDate: flexDate.optional(),
   divorcePlace: z.string().max(200).trim().optional(),
 });
 

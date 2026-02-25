@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { makeEvent } from '../../../src/handlers/test-helpers';
+import { makeEvent } from '../../helpers/test-helpers';
 
 // Mock auth middleware
 vi.mock('../../../src/middleware/auth', () => ({

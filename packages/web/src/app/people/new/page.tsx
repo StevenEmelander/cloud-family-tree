@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { QualifiedDateInput } from '@/components/QualifiedDateInput';
 import { api } from '@/lib/api';
+import { getErrorMessage } from '@/lib/errors';
 import { useAuth } from '@/lib/auth-context';
 import { canEditPeople } from '@/lib/auth-utils';
 import styles from './page.module.css';
@@ -65,7 +66,7 @@ export default function NewPersonPage() {
       const person = await api.createPerson(payload);
       router.push(`/people/${person.personId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create person');
+      setError(getErrorMessage(err, 'Failed to create person'));
       setSaving(false);
     }
   }

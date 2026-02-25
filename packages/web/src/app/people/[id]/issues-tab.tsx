@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { formatRelativeDate } from '@/lib/date-utils';
+import { getErrorMessage } from '@/lib/errors';
 import styles from './page.module.css';
 
 export default function IssuesTab({ personId }: { personId: string }) {
@@ -30,7 +31,7 @@ export default function IssuesTab({ personId }: { personId: string }) {
       const data = await api.listEntries(personId, 'issue');
       setIssues(data.items);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load issues');
+      setError(getErrorMessage(err, 'Failed to load issues'));
     } finally {
       setLoading(false);
     }
@@ -51,7 +52,7 @@ export default function IssuesTab({ personId }: { personId: string }) {
       setShowForm(false);
       await loadIssues();
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Failed to report issue');
+      setSubmitError(getErrorMessage(err, 'Failed to report issue'));
     } finally {
       setSubmitting(false);
     }
@@ -67,7 +68,7 @@ export default function IssuesTab({ personId }: { personId: string }) {
       setConfirmingDeleteId(null);
       await loadIssues();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to resolve issue');
+      setError(getErrorMessage(err, 'Failed to resolve issue'));
     } finally {
       setDeletingId(null);
     }

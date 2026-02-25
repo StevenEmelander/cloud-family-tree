@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { formatRelativeDate } from '@/lib/date-utils';
+import { getErrorMessage } from '@/lib/errors';
 import styles from './page.module.css';
 
 export default function WallTab({ personId }: { personId: string }) {
@@ -38,7 +39,7 @@ export default function WallTab({ personId }: { personId: string }) {
       const data = await api.listEntries(personId, 'wall');
       setEntries(data.items);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load entries');
+      setError(getErrorMessage(err, 'Failed to load entries'));
     } finally {
       setLoading(false);
     }
@@ -59,7 +60,7 @@ export default function WallTab({ personId }: { personId: string }) {
       setShowForm(false);
       await loadEntries();
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Failed to add entry');
+      setSubmitError(getErrorMessage(err, 'Failed to add entry'));
     } finally {
       setSubmitting(false);
     }
@@ -83,7 +84,7 @@ export default function WallTab({ personId }: { personId: string }) {
       setEditingId(null);
       await loadEntries();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update entry');
+      setError(getErrorMessage(err, 'Failed to update entry'));
     } finally {
       setEditSaving(false);
     }
@@ -99,7 +100,7 @@ export default function WallTab({ personId }: { personId: string }) {
       setConfirmingDeleteId(null);
       await loadEntries();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete entry');
+      setError(getErrorMessage(err, 'Failed to delete entry'));
     } finally {
       setDeletingId(null);
     }

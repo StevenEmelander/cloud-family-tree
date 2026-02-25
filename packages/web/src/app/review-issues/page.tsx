@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { formatRelativeDate } from '@/lib/date-utils';
+import { getErrorMessage } from '@/lib/errors';
 import styles from './page.module.css';
 
 interface PersonIssueGroup {
@@ -69,7 +70,7 @@ export default function ReviewIssuesPage() {
       groups.sort((a, b) => a.name.localeCompare(b.name));
       setIssueGroups(groups);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load');
+      setError(getErrorMessage(err, 'Failed to load'));
     } finally {
       setLoading(false);
     }
@@ -87,7 +88,7 @@ export default function ReviewIssuesPage() {
       setConfirmingId(null);
       await loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to resolve');
+      setError(getErrorMessage(err, 'Failed to resolve'));
     } finally {
       setResolvingId(null);
     }

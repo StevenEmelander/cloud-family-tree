@@ -96,25 +96,6 @@ export class ArtifactRepository extends BaseRepository {
     return result.items.map((r) => this.fromRecord(r));
   }
 
-  async findByPersonAndType(
-    personId: string,
-    artifactType: string,
-    limit?: number,
-  ): Promise<Artifact[]> {
-    const result = await this.query<Record<string, unknown>>({
-      indexName: GSI_NAMES.ARTIFACT_PERSON_INDEX,
-      keyCondition: 'GSI1PK = :pk',
-      expressionValues: {
-        ':pk': `${ENTITY_PREFIX.PERSON}#${personId}`,
-        ':atype': artifactType,
-      },
-      filterExpression: 'artifactType = :atype',
-      limit,
-      scanIndexForward: false,
-    });
-    return result.items.map((r) => this.fromRecord(r));
-  }
-
   async deleteAllForPerson(personId: string): Promise<void> {
     let cursor: string | undefined;
     do {

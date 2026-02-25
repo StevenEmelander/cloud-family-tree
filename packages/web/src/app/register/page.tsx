@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { getErrorMessage } from '@/lib/errors';
 import { siteConfig } from '@/lib/site-config';
 import styles from './page.module.css';
 
@@ -41,7 +42,7 @@ export default function RegisterPage() {
       await signUp(email, password, name);
       setStep('verify');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+      setError(getErrorMessage(err, 'Registration failed'));
     } finally {
       setLoading(false);
     }
@@ -55,7 +56,7 @@ export default function RegisterPage() {
       await confirmSignUp(email, code);
       setStep('done');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Verification failed');
+      setError(getErrorMessage(err, 'Verification failed'));
     } finally {
       setLoading(false);
     }

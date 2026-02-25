@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { getErrorMessage } from '@/lib/errors';
 import styles from './page.module.css';
 
 export default function ReportBugPage() {
@@ -30,7 +31,7 @@ export default function ReportBugPage() {
       setSuccess(true);
       setContent('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit bug report');
+      setError(getErrorMessage(err, 'Failed to submit bug report'));
     } finally {
       setSubmitting(false);
     }

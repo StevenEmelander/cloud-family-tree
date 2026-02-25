@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { makeEvent } from '../../../src/handlers/test-helpers';
+import { makeEvent } from '../../helpers/test-helpers';
 
 // Mock auth middleware
 vi.mock('../../../src/middleware/auth', () => ({
@@ -85,7 +85,7 @@ describe('Admin handlers', () => {
 
       expect(result.statusCode).toBe(400);
       const body = JSON.parse(result.body);
-      expect(body.data.message).toBe('Cannot delete yourself');
+      expect(body.error).toBe('Cannot delete yourself');
       expect(mockService.deleteUser).not.toHaveBeenCalled();
     });
   });
@@ -149,7 +149,7 @@ describe('Admin handlers', () => {
 
       expect(result.statusCode).toBe(400);
       const body = JSON.parse(result.body);
-      expect(body.data.message).toBe('Cannot change your own role');
+      expect(body.error).toBe('Cannot change your own role');
       expect(mockService.setUserRole).not.toHaveBeenCalled();
     });
   });

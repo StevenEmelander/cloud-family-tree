@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { getErrorMessage } from '@/lib/errors';
 import { displayRole } from '@/lib/site-config';
 import styles from './page.module.css';
 
@@ -46,7 +47,7 @@ export default function SettingsPage() {
       setNewPassword('');
       setConfirmPw('');
     } catch (err) {
-      setPwError(err instanceof Error ? err.message : 'Failed to change password');
+      setPwError(getErrorMessage(err, 'Failed to change password'));
     } finally {
       setChangingPw(false);
     }
@@ -61,7 +62,7 @@ export default function SettingsPage() {
       updateUser({ editorRequested: true });
       setEditorRequestStatus(result.message);
     } catch (err) {
-      setEditorRequestError(err instanceof Error ? err.message : 'Failed to request editor access');
+      setEditorRequestError(getErrorMessage(err, 'Failed to request editor access'));
     } finally {
       setRequestingEditor(false);
     }

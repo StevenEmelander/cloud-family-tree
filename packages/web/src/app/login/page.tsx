@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { getErrorMessage } from '@/lib/errors';
 import { siteConfig } from '@/lib/site-config';
 import styles from './page.module.css';
 
@@ -34,7 +35,7 @@ export default function LoginPage() {
         router.push('/');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign in failed');
+      setError(getErrorMessage(err, 'Sign in failed'));
     } finally {
       setLoading(false);
     }
@@ -56,7 +57,7 @@ export default function LoginPage() {
       await completeNewPassword(newPassword);
       router.push('/');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to set new password');
+      setError(getErrorMessage(err, 'Failed to set new password'));
     } finally {
       setLoading(false);
     }
