@@ -44,7 +44,7 @@ next-env.d.ts
 .turbo/
 
 # CDK
-cdk.out/
+cdk.out*/
 .cdk.staging/
 tmp/
 

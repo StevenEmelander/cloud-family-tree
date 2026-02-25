@@ -1,20 +1,25 @@
-import {
-  AuthenticationDetails,
-  CognitoUser,
-  CognitoUserAttribute,
-  CognitoUserPool,
-  type CognitoUserSession,
+import type {
+  CognitoUser as CognitoUserType,
+  CognitoUserPool as CognitoUserPoolType,
+  CognitoUserSession,
 } from 'amazon-cognito-identity-js';
 
-const userPool = new CognitoUserPool({
-  UserPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID ?? '',
-  ClientId: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID ?? '',
-});
+let _pool: CognitoUserPoolType | null = null;
+
+async function getPool(): Promise<CognitoUserPoolType> {
+  if (_pool) return _pool;
+  const { CognitoUserPool } = await import('amazon-cognito-identity-js');
+  _pool = new CognitoUserPool({
+    UserPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID ?? '',
+    ClientId: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID ?? '',
+  });
+  return _pool;
+}
 
 // Module-scoped state for the new-password challenge flow.
 // Stored here (not on window) so the CognitoUser survives between
 // signIn() and completeNewPassword() calls without fragile casts.
-let pendingCognitoUser: CognitoUser | null = null;
+let pendingCognitoUser: CognitoUserType | null = null;
 
 export interface AuthUser {
   userId: string;
@@ -37,9 +42,10 @@ function parseSession(session: CognitoUserSession): AuthUser {
   };
 }
 
-export function getCurrentSession(): Promise<CognitoUserSession | null> {
+export async function getCurrentSession(): Promise<CognitoUserSession | null> {
+  const pool = await getPool();
   return new Promise((resolve) => {
-    const user = userPool.getCurrentUser();
+    const user = pool.getCurrentUser();
     if (!user) return resolve(null);
     user.getSession((err: Error | null, session: CognitoUserSession | null) => {
       if (err || !session?.isValid()) return resolve(null);
@@ -56,12 +62,17 @@ export function getIdToken(): Promise<string | null> {
   return getCurrentSession().then((session) => session?.getIdToken().getJwtToken() ?? null);
 }
 
-export function signIn(
+export async function signIn(
   email: string,
   password: string,
 ): Promise<{ user: AuthUser; newPasswordRequired: boolean }> {
+  const [pool, { CognitoUser, AuthenticationDetails }] = await Promise.all([
+    getPool(),
+    import('amazon-cognito-identity-js'),
+  ]);
+
   return new Promise((resolve, reject) => {
-    const cognitoUser = new CognitoUser({ Username: email, Pool: userPool });
+    const cognitoUser = new CognitoUser({ Username: email, Pool: pool });
     const authDetails = new AuthenticationDetails({ Username: email, Password: password });
 
     cognitoUser.authenticateUser(authDetails, {
@@ -82,23 +93,33 @@ export function signIn(
   });
 }
 
-export function signUp(email: string, password: string, name: string): Promise<void> {
+export async function signUp(email: string, password: string, name: string): Promise<void> {
+  const [pool, { CognitoUserAttribute }] = await Promise.all([
+    getPool(),
+    import('amazon-cognito-identity-js'),
+  ]);
+
   return new Promise((resolve, reject) => {
     const attributes = [
       new CognitoUserAttribute({ Name: 'email', Value: email }),
       new CognitoUserAttribute({ Name: 'name', Value: name }),
     ];
 
-    userPool.signUp(email, password, attributes, [], (err) => {
+    pool.signUp(email, password, attributes, [], (err) => {
       if (err) return reject(err);
       resolve();
     });
   });
 }
 
-export function confirmSignUp(email: string, code: string): Promise<void> {
+export async function confirmSignUp(email: string, code: string): Promise<void> {
+  const [pool, { CognitoUser }] = await Promise.all([
+    getPool(),
+    import('amazon-cognito-identity-js'),
+  ]);
+
   return new Promise((resolve, reject) => {
-    const cognitoUser = new CognitoUser({ Username: email, Pool: userPool });
+    const cognitoUser = new CognitoUser({ Username: email, Pool: pool });
     cognitoUser.confirmRegistration(code, true, (err) => {
       if (err) return reject(err);
       resolve();
@@ -126,9 +147,10 @@ export function completeNewPassword(newPassword: string): Promise<AuthUser> {
   });
 }
 
-export function changePassword(oldPassword: string, newPassword: string): Promise<void> {
+export async function changePassword(oldPassword: string, newPassword: string): Promise<void> {
+  const pool = await getPool();
   return new Promise((resolve, reject) => {
-    const user = userPool.getCurrentUser();
+    const user = pool.getCurrentUser();
     if (!user) return reject(new Error('Not signed in'));
     user.getSession((err: Error | null, session: CognitoUserSession | null) => {
       if (err || !session?.isValid()) return reject(new Error('Session expired'));
@@ -140,7 +162,8 @@ export function changePassword(oldPassword: string, newPassword: string): Promis
   });
 }
 
-export function signOut(): void {
-  const user = userPool.getCurrentUser();
+export async function signOut(): Promise<void> {
+  const pool = await getPool();
+  const user = pool.getCurrentUser();
   if (user) user.signOut();
 }

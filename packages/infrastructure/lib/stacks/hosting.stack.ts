@@ -1,3 +1,4 @@
+import * as path from 'node:path';
 import * as cdk from 'aws-cdk-lib';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 
@@ -6,6 +7,7 @@ import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import type { Construct } from 'constructs';
 import type { Config } from '../../../../config';
 
@@ -47,6 +49,7 @@ export class HostingStack extends cdk.Stack {
 
     // CloudFront Function to rewrite dynamic routes for Next.js static export.
     // /people/{id}/ → /people/_/index.html (the static placeholder page)
+    // /people/{id}/index.txt → /people/_/index.txt (RSC prefetch)
     // All other paths get /index.html appended for directory-style URLs.
     const urlRewriteFn = new cloudfront.Function(this, 'UrlRewriteFunction', {
       functionName: `${config.familyName}Family-UrlRewrite`,
@@ -55,6 +58,12 @@ export class HostingStack extends cdk.Stack {
 function handler(event) {
   var request = event.request;
   var uri = request.uri;
+
+  // Rewrite /people/{id}/index.txt to the static placeholder (RSC prefetch)
+  if (uri.match(/^\\/people\\/[^_][^\\/]*\\/index\\.txt$/)) {
+    request.uri = '/people/_/index.txt';
+    return request;
+  }
 
   // Rewrite /people/{id}/ or /people/{id} to the static placeholder
   if (uri.match(/^\\/people\\/[^_][^\\/]*\\/?$/)) {
@@ -105,10 +114,22 @@ function handler(event) {
       },
     );
 
+    // Long-lived cache policy for hashed static assets (_next/static/*)
+    const immutableCachePolicy = new cloudfront.CachePolicy(this, 'ImmutableCachePolicy', {
+      cachePolicyName: `${config.familyName}Family-ImmutableAssets`,
+      defaultTtl: cdk.Duration.days(365),
+      maxTtl: cdk.Duration.days(365),
+      minTtl: cdk.Duration.days(365),
+      enableAcceptEncodingGzip: true,
+      enableAcceptEncodingBrotli: true,
+    });
+
+    const s3Origin = origins.S3BucketOrigin.withOriginAccessControl(this.siteBucket);
+
     // CloudFront distribution
     this.distribution = new cloudfront.Distribution(this, 'SiteDistribution', {
       defaultBehavior: {
-        origin: origins.S3BucketOrigin.withOriginAccessControl(this.siteBucket),
+        origin: s3Origin,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
         responseHeadersPolicy: securityHeadersPolicy,
@@ -118,6 +139,14 @@ function handler(event) {
             eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
           },
         ],
+      },
+      additionalBehaviors: {
+        '_next/static/*': {
+          origin: s3Origin,
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          cachePolicy: immutableCachePolicy,
+          responseHeadersPolicy: securityHeadersPolicy,
+        },
       },
       domainNames: [domainName, `www.${domainName}`],
       certificate: siteCertificate,
@@ -137,6 +166,33 @@ function handler(event) {
           ttl: cdk.Duration.seconds(0),
         },
       ],
+    });
+
+    // Deploy all site files with no-cache (safe default for HTML + RSC .txt files)
+    const webOutDir = path.join(__dirname, '..', '..', '..', 'web', 'out');
+
+    new s3deploy.BucketDeployment(this, 'DeploySiteFiles', {
+      sources: [s3deploy.Source.asset(webOutDir)],
+      destinationBucket: this.siteBucket,
+      distribution: this.distribution,
+      distributionPaths: ['/*'],
+      cacheControl: [s3deploy.CacheControl.noCache()],
+      prune: true,
+    });
+
+    // Overwrite _next/static/* with immutable cache (content-hashed filenames)
+    new s3deploy.BucketDeployment(this, 'DeployStaticAssets', {
+      sources: [
+        s3deploy.Source.asset(path.join(webOutDir, '_next', 'static')),
+      ],
+      destinationBucket: this.siteBucket,
+      destinationKeyPrefix: '_next/static',
+      cacheControl: [
+        s3deploy.CacheControl.setPublic(),
+        s3deploy.CacheControl.maxAge(cdk.Duration.days(365)),
+        s3deploy.CacheControl.immutable(),
+      ],
+      prune: false,
     });
 
     // Site DNS records

@@ -10,12 +10,14 @@ import { ApiValidationError, api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { canEditPeople } from '@/lib/auth-utils';
 import { formatLifespan } from '@/lib/date-utils';
+import dynamic from 'next/dynamic';
 import AddRelationship from './add-relationship';
-import ArtifactsTab from './artifacts-tab';
-import FamilyTree from './family-tree';
-import IssuesTab from './issues-tab';
 import styles from './page.module.css';
-import WallTab from './wall-tab';
+
+const FamilyTree = dynamic(() => import('./family-tree'), { ssr: false });
+const ArtifactsTab = dynamic(() => import('./artifacts-tab'), { ssr: false });
+const WallTab = dynamic(() => import('./wall-tab'), { ssr: false });
+const IssuesTab = dynamic(() => import('./issues-tab'), { ssr: false });
 
 type Tab = 'tree' | 'details' | 'artifacts' | 'wall' | 'issues';
 

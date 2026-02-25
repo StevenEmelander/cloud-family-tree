@@ -72,12 +72,8 @@ if [ "$FRONTEND_ONLY" = false ]; then
   cd "$ROOT_DIR"
 fi
 
-# Step 3: Sync frontend to S3 + invalidate CloudFront
+# Step 3: Invalidate CloudFront (S3 upload is handled by CDK BucketDeployment)
 if [ "$BACKEND_ONLY" = false ]; then
-  echo ""
-  echo "==> Syncing frontend to S3..."
-  aws s3 sync packages/web/out "s3://$SITE_BUCKET" --delete
-
   echo ""
   echo "==> Invalidating CloudFront..."
   aws cloudfront create-invalidation \

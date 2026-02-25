@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const handleSignOut = useCallback(() => {
-    authSignOut();
+    authSignOut().catch(() => {});
     setUser(null);
   }, []);
 
