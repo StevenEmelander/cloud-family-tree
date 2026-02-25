@@ -34,8 +34,10 @@ function parseGedcomDate(dateStr: string | undefined): ParsedDate {
   if (!dateStr) return { date: undefined };
   // Strip common GEDCOM date prefixes (ABT, AFT, BEF, EST, CAL, etc.)
   const prefixMatch = dateStr.match(/^(ABT|AFT|BEF|EST|CAL|FROM|TO|INT)\s+/i);
-  const qualifier = prefixMatch ? prefixMatch[1]!.toUpperCase() : undefined;
-  const cleaned = qualifier ? dateStr.slice(prefixMatch![0].length).trim() : dateStr.trim();
+  const qualifier = prefixMatch ? (prefixMatch[1] ?? '').toUpperCase() : undefined;
+  const cleaned = qualifier
+    ? dateStr.slice((prefixMatch?.[0] ?? '').length).trim()
+    : dateStr.trim();
   if (!cleaned) return { date: undefined };
   const months: Record<string, string> = {
     JAN: '01',
@@ -58,7 +60,7 @@ function parseGedcomDate(dateStr: string | undefined): ParsedDate {
   const fullMatch = cleaned.match(/^(\d{1,2})\s+([A-Z]{3})\s+(\d{4})$/);
   if (fullMatch) {
     const [, day, mon, year] = fullMatch;
-    const month = months[mon!];
+    const month = months[mon ?? ''];
     if (month) parsed = `${year}-${month}-${day?.padStart(2, '0')}`;
   }
   // Month + year: SEP 1883 → 1883-09
@@ -66,7 +68,7 @@ function parseGedcomDate(dateStr: string | undefined): ParsedDate {
     const monthYearMatch = cleaned.match(/^([A-Z]{3})\s+(\d{4})$/);
     if (monthYearMatch) {
       const [, mon, year] = monthYearMatch;
-      const month = months[mon!];
+      const month = months[mon ?? ''];
       if (month) parsed = `${year}-${month}`;
     }
   }
@@ -74,7 +76,7 @@ function parseGedcomDate(dateStr: string | undefined): ParsedDate {
   if (!parsed) {
     const yearMatch = cleaned.match(/^(\d{4})$/);
     if (yearMatch) {
-      parsed = yearMatch[1]!;
+      parsed = yearMatch[1] ?? '';
     }
   }
 
@@ -84,13 +86,19 @@ function parseGedcomDate(dateStr: string | undefined): ParsedDate {
   const parts = parsed.split('-').map(Number);
   if (parts.length === 3) {
     const [y, m, d] = parts;
-    const dateObj = new Date(y!, m! - 1, d);
-    if (dateObj.getFullYear() !== y || dateObj.getMonth() !== m! - 1 || dateObj.getDate() !== d) {
+    const yVal = y ?? 0;
+    const mVal = m ?? 0;
+    const dateObj = new Date(yVal, mVal - 1, d);
+    if (
+      dateObj.getFullYear() !== yVal ||
+      dateObj.getMonth() !== mVal - 1 ||
+      dateObj.getDate() !== d
+    ) {
       return { date: undefined, warning: `Invalid date in GEDCOM: "${dateStr}"` };
     }
   } else if (parts.length === 2) {
     const [, m] = parts;
-    if (m! < 1 || m! > 12) {
+    if ((m ?? 0) < 1 || (m ?? 0) > 12) {
       return { date: undefined, warning: `Invalid date in GEDCOM: "${dateStr}"` };
     }
   }
@@ -246,7 +254,8 @@ export class GedcomImportService {
           },
         });
       } catch (err) {
-        errors.push(`Failed to parse person: ${err}`);
+        console.error('GEDCOM parse person error:', err);
+        errors.push('Failed to parse person: invalid data');
       }
     }
 
@@ -333,13 +342,14 @@ export class GedcomImportService {
     const famRecords = gedcom.getFamilyRecord();
     for (const fam of famRecords.arraySelect()) {
       try {
-        const husbandPtr = valStr(fam.getHusband());
-        const wifePtr = valStr(fam.getWife());
+        // GEDCOM uses HUSB/WIFE tags — read them as spouse1/spouse2
+        const spouse1Ptr = valStr(fam.getHusband());
+        const spouse2Ptr = valStr(fam.getWife());
 
-        if (husbandPtr && wifePtr) {
-          const husbandId = idMap.get(husbandPtr);
-          const wifeId = idMap.get(wifePtr);
-          if (husbandId && wifeId) {
+        if (spouse1Ptr && spouse2Ptr) {
+          const spouse1Id = idMap.get(spouse1Ptr);
+          const spouse2Id = idMap.get(spouse2Ptr);
+          if (spouse1Id && spouse2Id) {
             const marriageEvent = fam.getEventMarriage();
             const marriageDateResult = parseGedcomDate(valStr(marriageEvent.getDate()));
             if (marriageDateResult.warning) warnings.push(marriageDateResult.warning);
@@ -349,8 +359,8 @@ export class GedcomImportService {
             relationships.push({
               relationshipId: uuid(),
               relationshipType: RelationshipType.SPOUSE,
-              person1Id: husbandId,
-              person2Id: wifeId,
+              person1Id: spouse1Id,
+              person2Id: spouse2Id,
               metadata: {
                 marriageDate: marriageDateResult.date,
                 marriagePlace,
@@ -366,25 +376,25 @@ export class GedcomImportService {
           if (!childPtr) continue;
           const childId = idMap.get(childPtr);
           if (!childId) continue;
-          if (husbandPtr) {
-            const fatherId = idMap.get(husbandPtr);
-            if (fatherId) {
+          if (spouse1Ptr) {
+            const parent1Id = idMap.get(spouse1Ptr);
+            if (parent1Id) {
               relationships.push({
                 relationshipId: uuid(),
                 relationshipType: RelationshipType.PARENT_CHILD,
-                person1Id: fatherId,
+                person1Id: parent1Id,
                 person2Id: childId,
                 createdAt: now,
               });
             }
           }
-          if (wifePtr) {
-            const motherId = idMap.get(wifePtr);
-            if (motherId) {
+          if (spouse2Ptr) {
+            const parent2Id = idMap.get(spouse2Ptr);
+            if (parent2Id) {
               relationships.push({
                 relationshipId: uuid(),
                 relationshipType: RelationshipType.PARENT_CHILD,
-                person1Id: motherId,
+                person1Id: parent2Id,
                 person2Id: childId,
                 createdAt: now,
               });
@@ -392,7 +402,8 @@ export class GedcomImportService {
           }
         }
       } catch (err) {
-        errors.push(`Failed to parse family: ${err}`);
+        console.error('GEDCOM parse family error:', err);
+        errors.push('Failed to parse family: invalid data');
       }
     }
 
@@ -441,7 +452,8 @@ export class GedcomImportService {
       try {
         await this.personRepo.update(id, { ...fields, updatedAt: now });
       } catch (err) {
-        errors.push(`Failed to update person ${id}: ${err}`);
+        console.error('GEDCOM update person error:', err);
+        errors.push(`Failed to update person ${id}`);
       }
     }
 

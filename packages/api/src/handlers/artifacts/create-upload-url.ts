@@ -9,6 +9,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   try {
     const user = await authorize(event, 'write');
     const body = JSON.parse(event.body || '{}');
+    // biome-ignore lint/style/noNonNullAssertion: authorize('write') guarantees user
     const result = await service.createUploadUrl(body, user!.userId);
     return successResponse(200, result);
   } catch (error) {

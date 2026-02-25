@@ -119,6 +119,7 @@ export default function NewPersonPage() {
             <option value="UNKNOWN">Unknown</option>
           </select>
         </label>
+        {/* biome-ignore lint/a11y/noLabelWithoutControl: QualifiedDateInput renders its own input elements */}
         <label className={styles.field}>
           <span className={styles.label}>Birth Date</span>
           <QualifiedDateInput
@@ -139,6 +140,7 @@ export default function NewPersonPage() {
             disabled={saving}
           />
         </label>
+        {/* biome-ignore lint/a11y/noLabelWithoutControl: QualifiedDateInput renders its own input elements */}
         <label className={styles.field}>
           <span className={styles.label}>Death Date</span>
           <QualifiedDateInput

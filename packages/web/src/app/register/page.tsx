@@ -100,6 +100,7 @@ export default function RegisterPage() {
                 className={styles.input}
                 required
                 autoComplete="one-time-code"
+                // biome-ignore lint/a11y/noAutofocus: verification code input should auto-focus for immediate entry after registration
                 autoFocus
               />
             </label>

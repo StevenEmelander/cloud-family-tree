@@ -12,6 +12,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const personId = event.queryStringParameters?.personId;
     if (!id || !personId) return errorResponse(new Error('Missing id or personId parameter'));
     const body = JSON.parse(event.body || '{}');
+    // biome-ignore lint/style/noNonNullAssertion: authorize('write') guarantees user
     const artifact = await service.update(id, personId, body, user!);
     return successResponse(200, artifact);
   } catch (error) {

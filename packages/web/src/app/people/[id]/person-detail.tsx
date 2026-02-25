@@ -437,6 +437,7 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
             deathDate: relatedPeople[r.person1Id]?.deathDate,
             deathDateQualifier: relatedPeople[r.person1Id]?.deathDateQualifier,
           }))}
+          // biome-ignore lint/correctness/noChildrenProp: "children" is a data prop (PersonNode[]) on FamilyTree, not React children
           children={children.map((r) => ({
             id: r.person2Id,
             name: relatedPeople[r.person2Id]?.name || 'Loading...',
@@ -541,6 +542,7 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
                     <option value="UNKNOWN">Unknown</option>
                   </select>
                 </label>
+                {/* biome-ignore lint/a11y/noLabelWithoutControl: QualifiedDateInput renders its own input elements */}
                 <label className={styles.formField}>
                   <span className={styles.formLabel}>Birth Date</span>
                   <QualifiedDateInput
@@ -565,6 +567,7 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
                     <span className={styles.fieldError}>{fieldErrors.birthPlace}</span>
                   )}
                 </label>
+                {/* biome-ignore lint/a11y/noLabelWithoutControl: QualifiedDateInput renders its own input elements */}
                 <label className={styles.formField}>
                   <span className={styles.formLabel}>Death Date</span>
                   <QualifiedDateInput
@@ -767,13 +770,13 @@ function Linkify({ text }: { text: string }) {
   const parts = text.split(urlRegex);
   return (
     <>
-      {parts.map((part, i) =>
+      {parts.map((part) =>
         /^https?:\/\//.test(part) ? (
-          <a key={i} href={part} target="_blank" rel="noopener noreferrer">
+          <a key={part} href={part} target="_blank" rel="noopener noreferrer">
             {part}
           </a>
         ) : (
-          <span key={i}>{part}</span>
+          <span key={part}>{part}</span>
         ),
       )}
     </>
@@ -818,13 +821,13 @@ const QUALIFIER_LABELS: Record<string, string> = {
 function formatDate(date: string, qualifier?: DateQualifier): string {
   const parts = date.split('-');
   let formatted: string;
-  if (parts.length === 1) formatted = parts[0]!;
+  if (parts.length === 1) formatted = parts[0] ?? '';
   else if (parts.length === 2) {
-    const monthIdx = Number.parseInt(parts[1]!, 10) - 1;
+    const monthIdx = Number.parseInt(parts[1] ?? '', 10) - 1;
     formatted = `${MONTH_NAMES[monthIdx]} ${parts[0]}`;
   } else {
-    const monthIdx = Number.parseInt(parts[1]!, 10) - 1;
-    formatted = `${Number.parseInt(parts[2]!, 10)} ${MONTH_NAMES[monthIdx]} ${parts[0]}`;
+    const monthIdx = Number.parseInt(parts[1] ?? '', 10) - 1;
+    formatted = `${Number.parseInt(parts[2] ?? '', 10)} ${MONTH_NAMES[monthIdx]} ${parts[0]}`;
   }
   if (qualifier) {
     const label = QUALIFIER_LABELS[qualifier] || qualifier;
@@ -1082,6 +1085,7 @@ function SpouseSection({
                   <div className={styles.spouseMetaForm}>
                     {spouseMetaError && <p className={styles.fieldError}>{spouseMetaError}</p>}
                     <div className={styles.spouseMetaGrid}>
+                      {/* biome-ignore lint/a11y/noLabelWithoutControl: FlexDateInput renders its own input elements */}
                       <label className={styles.formField}>
                         <span className={styles.formLabel}>Marriage Date</span>
                         <FlexDateInput
@@ -1102,6 +1106,7 @@ function SpouseSection({
                           }
                         />
                       </label>
+                      {/* biome-ignore lint/a11y/noLabelWithoutControl: FlexDateInput renders its own input elements */}
                       <label className={styles.formField}>
                         <span className={styles.formLabel}>Divorce Date</span>
                         <FlexDateInput

@@ -41,6 +41,7 @@ export class ApiStack extends cdk.Stack {
       COGNITO_USER_POOL_ID: userPool.userPoolId,
       COGNITO_CLIENT_ID: userPoolClient.userPoolClientId,
       REQUIRE_AUTH_FOR_READ: String(config.access.requireAuthForRead),
+      FRONTEND_DOMAIN: config.domain.enabled ? `https://${config.domain.name}` : '',
     };
 
     const apiSrcDir = path.join(__dirname, '../../../api/src');
@@ -169,6 +170,9 @@ export class ApiStack extends cdk.Stack {
       ? [`https://${config.domain.name}`, `https://www.${config.domain.name}`]
       : apigateway.Cors.ALL_ORIGINS;
 
+    // Single origin value used in gateway error responses (must be quoted string literal)
+    const corsOriginValue = config.domain.enabled ? `'https://${config.domain.name}'` : "'*'";
+
     // API Gateway
     this.api = new apigateway.RestApi(this, 'Api', {
       restApiName: `${config.familyName}Family-API`,
@@ -178,6 +182,10 @@ export class ApiStack extends cdk.Stack {
         allowMethods: apigateway.Cors.ALL_METHODS,
         allowHeaders: ['Content-Type', 'Authorization'],
       },
+      deployOptions: {
+        throttlingRateLimit: 1000,
+        throttlingBurstLimit: 500,
+      },
     });
 
     // Add Gateway Responses for 4XX/5XX so CORS headers are always present
@@ -185,28 +193,28 @@ export class ApiStack extends cdk.Stack {
     this.api.addGatewayResponse('Unauthorized', {
       type: apigateway.ResponseType.UNAUTHORIZED,
       responseHeaders: {
-        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Origin': corsOriginValue,
         'Access-Control-Allow-Headers': "'Content-Type,Authorization'",
       },
     });
     this.api.addGatewayResponse('AccessDenied', {
       type: apigateway.ResponseType.ACCESS_DENIED,
       responseHeaders: {
-        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Origin': corsOriginValue,
         'Access-Control-Allow-Headers': "'Content-Type,Authorization'",
       },
     });
     this.api.addGatewayResponse('Default4XX', {
       type: apigateway.ResponseType.DEFAULT_4XX,
       responseHeaders: {
-        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Origin': corsOriginValue,
         'Access-Control-Allow-Headers': "'Content-Type,Authorization'",
       },
     });
     this.api.addGatewayResponse('Default5XX', {
       type: apigateway.ResponseType.DEFAULT_5XX,
       responseHeaders: {
-        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Origin': corsOriginValue,
         'Access-Control-Allow-Headers': "'Content-Type,Authorization'",
       },
     });

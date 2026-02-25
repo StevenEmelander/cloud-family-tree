@@ -21,15 +21,17 @@ const { mockService } = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../src/services/person.service', () => ({
-  PersonService: vi.fn().mockImplementation(function () { return mockService; }),
+  PersonService: vi.fn().mockImplementation(function () {
+    return mockService;
+  }),
 }));
 
+import { handler as createPerson } from '../../../src/handlers/people/create';
+import { handler as deletePerson } from '../../../src/handlers/people/delete';
 // Static imports — mocks are guaranteed to be in place before module loads
 import { handler as getPerson } from '../../../src/handlers/people/get';
 import { handler as listPeople } from '../../../src/handlers/people/list';
-import { handler as createPerson } from '../../../src/handlers/people/create';
 import { handler as updatePerson } from '../../../src/handlers/people/update';
-import { handler as deletePerson } from '../../../src/handlers/people/delete';
 
 const person: Person = {
   personId: 'id-1',

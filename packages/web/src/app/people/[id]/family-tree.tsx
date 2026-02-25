@@ -94,7 +94,7 @@ function abbreviateName(fullName: string, maxLen = 20): string {
   const last = parts[parts.length - 1];
   const middles = parts
     .slice(1, -1)
-    .map((m) => m[0] + '.')
+    .map((m) => `${m[0]}.`)
     .join(' ');
   return `${first} ${middles} ${last}`;
 }
@@ -308,6 +308,7 @@ export default function FamilyTree({
       curX += NODE_W;
 
       if (i < middleRow.length - 1) {
+        // biome-ignore lint/style/noNonNullAssertion: guarded by i < middleRow.length - 1 check
         const nextNode = middleRow[i + 1]!;
         const spouseId = node.id === personId ? nextNode.id : node.id;
         const { label, w } = marriageLabelAndWidth(marriages[spouseId]);
@@ -464,8 +465,9 @@ export default function FamilyTree({
     <div className={styles.wrapper} ref={wrapperRef}>
       <div className={styles.inner} style={{ width, height }}>
         <svg className={styles.svg} width={width} height={height}>
-          {edges.map((e, i) => (
-            <path key={`e-${i}`} d={e.d} className={styles.edgeLine} />
+          <title>Family tree connections</title>
+          {edges.map((e) => (
+            <path key={e.d} d={e.d} className={styles.edgeLine} />
           ))}
         </svg>
         {nodes.map((n) => (
@@ -479,9 +481,9 @@ export default function FamilyTree({
             <span className={styles.nodeLabel}>{lifespan(n) || ''}</span>
           </Link>
         ))}
-        {marriageBoxes.map((mb, i) => (
+        {marriageBoxes.map((mb) => (
           <div
-            key={`mb-${i}`}
+            key={`mb-${mb.x}-${mb.y}`}
             className={styles.marriageBox}
             style={{ left: mb.x, top: mb.y, width: mb.w, height: MARRIAGE_H }}
           >

@@ -26,9 +26,9 @@ export class PersonService {
 
   async create(input: CreatePersonInput): Promise<Person> {
     const result = validate(createPersonSchema, input);
-    if (!result.success) throw new ValidationError(result.errors!);
+    if (!result.success) throw new ValidationError(result.errors);
 
-    const data = result.data!;
+    const data = result.data;
 
     // Check for duplicate (same firstName + lastName + birthDate)
     const nameMatches = await this.personRepo.findByExactName(data.firstName, data.lastName);
@@ -59,7 +59,7 @@ export class PersonService {
 
   async update(id: string, input: UpdatePersonInput): Promise<Person> {
     const result = validate(updatePersonSchema, input);
-    if (!result.success) throw new ValidationError(result.errors!);
+    if (!result.success) throw new ValidationError(result.errors);
 
     await this.getById(id); // verify exists
 
@@ -73,7 +73,7 @@ export class PersonService {
       'burialPlace',
       'biography',
     ] as const;
-    const updates: Record<string, unknown> = { ...result.data!, updatedAt: isoNow() };
+    const updates: Record<string, unknown> = { ...result.data, updatedAt: isoNow() };
     for (const field of clearableFields) {
       if (field in input && updates[field] === undefined) {
         updates[field] = null;

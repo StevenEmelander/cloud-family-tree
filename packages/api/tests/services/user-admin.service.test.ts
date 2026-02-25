@@ -3,23 +3,27 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { mockSend } = vi.hoisted(() => ({ mockSend: vi.fn() }));
 
 vi.mock('@aws-sdk/client-cognito-identity-provider', () => ({
-  CognitoIdentityProviderClient: vi.fn().mockImplementation(function () { return { send: mockSend }; }),
-  ListUsersCommand: vi.fn().mockImplementation(function (input) { return { ...input, _type: 'ListUsers' }; }),
-  AdminListGroupsForUserCommand: vi
-    .fn()
-    .mockImplementation(function (input) { return { ...input, _type: 'AdminListGroups' }; }),
-  AdminAddUserToGroupCommand: vi
-    .fn()
-    .mockImplementation(function (input) { return { ...input, _type: 'AdminAddToGroup' }; }),
-  AdminRemoveUserFromGroupCommand: vi
-    .fn()
-    .mockImplementation(function (input) { return { ...input, _type: 'AdminRemoveFromGroup' }; }),
-  AdminDeleteUserCommand: vi
-    .fn()
-    .mockImplementation(function (input) { return { ...input, _type: 'AdminDeleteUser' }; }),
-  AdminUpdateUserAttributesCommand: vi
-    .fn()
-    .mockImplementation(function (input) { return { ...input, _type: 'AdminUpdateUserAttributes' }; }),
+  CognitoIdentityProviderClient: vi.fn().mockImplementation(function () {
+    return { send: mockSend };
+  }),
+  ListUsersCommand: vi.fn().mockImplementation(function (input) {
+    return { ...input, _type: 'ListUsers' };
+  }),
+  AdminListGroupsForUserCommand: vi.fn().mockImplementation(function (input) {
+    return { ...input, _type: 'AdminListGroups' };
+  }),
+  AdminAddUserToGroupCommand: vi.fn().mockImplementation(function (input) {
+    return { ...input, _type: 'AdminAddToGroup' };
+  }),
+  AdminRemoveUserFromGroupCommand: vi.fn().mockImplementation(function (input) {
+    return { ...input, _type: 'AdminRemoveFromGroup' };
+  }),
+  AdminDeleteUserCommand: vi.fn().mockImplementation(function (input) {
+    return { ...input, _type: 'AdminDeleteUser' };
+  }),
+  AdminUpdateUserAttributesCommand: vi.fn().mockImplementation(function (input) {
+    return { ...input, _type: 'AdminUpdateUserAttributes' };
+  }),
 }));
 
 import { UserAdminService } from '../../src/services/user-admin.service';

@@ -19,9 +19,9 @@ export class EntryService {
     user: AuthenticatedUser,
   ): Promise<Entry> {
     const result = validate(createEntrySchema, input);
-    if (!result.success) throw new ValidationError(result.errors!);
+    if (!result.success) throw new ValidationError(result.errors);
 
-    const data = result.data!;
+    const data = result.data;
     const entryType = data.entryType || 'wall';
 
     // Verify person exists (skip for SITE — used for bugs)
@@ -60,7 +60,7 @@ export class EntryService {
     user: AuthenticatedUser,
   ): Promise<Entry> {
     const result = validate(updateEntrySchema, input);
-    if (!result.success) throw new ValidationError(result.errors!);
+    if (!result.success) throw new ValidationError(result.errors);
 
     const existing = await this.entryRepo.findById(entryId, personId);
     if (!existing) throw new NotFoundError('Entry', entryId);
@@ -71,9 +71,9 @@ export class EntryService {
     }
 
     const now = isoNow();
-    await this.entryRepo.update(entryId, personId, result.data!.content, now);
+    await this.entryRepo.update(entryId, personId, result.data.content, now);
 
-    return { ...existing, content: result.data!.content, updatedAt: now };
+    return { ...existing, content: result.data.content, updatedAt: now };
   }
 
   async delete(entryId: string, personId: string, user: AuthenticatedUser): Promise<void> {
@@ -119,7 +119,14 @@ export class EntryService {
     };
   }
 
-  async listAllByType(entryType: EntryType): Promise<Entry[]> {
-    return this.entryRepo.findAllByType(entryType);
+  async listAll(limit?: number, cursor?: string): Promise<PaginatedResponse<Entry>> {
+    const result = await this.entryRepo.findAll(limit, cursor);
+    return {
+      items: result.items,
+      count: result.items.length,
+      lastEvaluatedKey: result.lastEvaluatedKey
+        ? Buffer.from(JSON.stringify(result.lastEvaluatedKey)).toString('base64')
+        : undefined,
+    };
   }
 }

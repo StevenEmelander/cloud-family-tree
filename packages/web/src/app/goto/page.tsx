@@ -16,7 +16,7 @@ function GotoContent() {
 
     const parts = name.trim().split(/\s+/);
     const firstName = parts[0] || '';
-    const lastName = parts.length > 1 ? parts[parts.length - 1]! : '';
+    const lastName = parts.length > 1 ? (parts[parts.length - 1] ?? '') : '';
     const middleParts = parts.slice(1, -1).join(' ').replace(/\./g, '').toUpperCase();
     const searchTerm = lastName ? `${firstName} ${lastName}` : firstName;
 
@@ -24,12 +24,11 @@ function GotoContent() {
       .listPeople({ search: searchTerm, limit: 20 })
       .then((data) => {
         if (data.items.length > 0) {
+          // biome-ignore lint/style/noNonNullAssertion: guarded by data.items.length > 0 check above
           let best = data.items[0]!;
           if (middleParts) {
-            const match = data.items.find(
-              (p) =>
-                p.middleName &&
-                p.middleName.replace(/\./g, '').toUpperCase().startsWith(middleParts),
+            const match = data.items.find((p) =>
+              p.middleName?.replace(/\./g, '').toUpperCase().startsWith(middleParts),
             );
             if (match) best = match;
           }

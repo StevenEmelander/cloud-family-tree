@@ -213,6 +213,7 @@ export default function AdminPage() {
                 <div className={styles.approvalName}>{u.name || u.email}</div>
                 <div className={styles.approvalMeta}>
                   {u.name ? `${u.email} · ` : ''}Requested editor access{' '}
+                  {/* biome-ignore lint/style/noNonNullAssertion: editorRequested is guaranteed non-null inside pendingApprovals filter */}
                   {formatRelativeDate(u.editorRequested!)}
                 </div>
               </div>
@@ -328,6 +329,7 @@ export default function AdminPage() {
           </p>
 
           {!selectedFile && !importing && (
+            // biome-ignore lint/a11y/useSemanticElements: div with role="button" is needed here because element also serves as a drag-and-drop target
             <div
               className={`${styles.dropZone} ${dragOver ? styles.dropZoneActive : ''}`}
               onDrop={handleDrop}

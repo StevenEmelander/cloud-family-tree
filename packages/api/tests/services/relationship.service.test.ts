@@ -5,21 +5,25 @@ import { NotFoundError, ValidationError } from '../../src/middleware/error-handl
 import { RelationshipService } from '../../src/services/relationship.service';
 
 vi.mock('../../src/repositories/relationship.repository', () => ({
-  RelationshipRepository: vi.fn().mockImplementation(function () { return ({
-    findById: vi.fn(),
-    create: vi.fn(),
-    delete: vi.fn(),
-    findByPerson: vi.fn(),
-    findParentsOf: vi.fn(),
-    findChildrenOf: vi.fn(),
-  }); }),
+  RelationshipRepository: vi.fn().mockImplementation(function () {
+    return {
+      findById: vi.fn(),
+      create: vi.fn(),
+      delete: vi.fn(),
+      findByPerson: vi.fn(),
+      findParentsOf: vi.fn(),
+      findChildrenOf: vi.fn(),
+    };
+  }),
 }));
 
 vi.mock('../../src/repositories/person.repository', () => ({
-  PersonRepository: vi.fn().mockImplementation(function () { return ({
-    findById: vi.fn(),
-    findByIdForTree: vi.fn(),
-  }); }),
+  PersonRepository: vi.fn().mockImplementation(function () {
+    return {
+      findById: vi.fn(),
+      findByIdForTree: vi.fn(),
+    };
+  }),
 }));
 
 const PERSON1_ID = '11111111-1111-4111-8111-111111111111';

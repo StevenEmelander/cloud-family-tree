@@ -11,6 +11,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const id = event.pathParameters?.id;
     const personId = event.queryStringParameters?.personId;
     if (!id || !personId) return errorResponse(new Error('Missing id or personId parameter'));
+    // biome-ignore lint/style/noNonNullAssertion: authorize('write') guarantees user
     await service.delete(id, personId, user!);
     return successResponse(204, null);
   } catch (error) {

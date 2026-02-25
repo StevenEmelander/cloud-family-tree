@@ -23,7 +23,7 @@ export class ApiValidationError extends Error {
         // Format: "fieldName: message" or "fieldName.sub: message"
         const colonIdx = err.indexOf(': ');
         if (colonIdx > 0) {
-          const field = err.slice(0, colonIdx).split('.')[0]!;
+          const field = err.slice(0, colonIdx).split('.')[0] ?? '';
           this.fieldErrors[field] = err.slice(colonIdx + 2);
         }
       }
@@ -193,8 +193,15 @@ export const api = {
     );
   },
 
-  listAllEntries: (type: string) =>
-    apiFetch<{ items: Entry[]; count: number }>(`/entries?type=${type}`),
+  listAllEntries: (params?: { limit?: number; cursor?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.cursor) query.set('cursor', params.cursor);
+    const qs = query.toString();
+    return apiFetch<{ items: Entry[]; count: number; lastEvaluatedKey?: string }>(
+      `/entries${qs ? `?${qs}` : ''}`,
+    );
+  },
 
   createEntry: (personId: string, content: string, entryType?: string) =>
     apiFetch<Entry>(`/people/${personId}/entries`, {

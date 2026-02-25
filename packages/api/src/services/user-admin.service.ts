@@ -10,7 +10,7 @@ import {
 import type { AdminUserListItem } from '@cloud-family-tree/shared';
 
 const cognito = new CognitoIdentityProviderClient({});
-const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
+const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID ?? '';
 
 function getAttr(attrs: { Name?: string; Value?: string }[] | undefined, name: string): string {
   return attrs?.find((a) => a.Name === name)?.Value || '';
@@ -25,7 +25,7 @@ export class UserAdminService {
       const groupsResult = await cognito.send(
         new AdminListGroupsForUserCommand({
           UserPoolId: USER_POOL_ID,
-          Username: u.Username!,
+          Username: u.Username ?? '',
         }),
       );
 
@@ -37,7 +37,7 @@ export class UserAdminService {
 
       const editorRequested = getAttr(u.Attributes, 'custom:editorRequested');
       users.push({
-        userId: u.Username!,
+        userId: u.Username ?? '',
         email: getAttr(u.Attributes, 'email'),
         name: getAttr(u.Attributes, 'name'),
         role,
@@ -106,7 +106,7 @@ export class UserAdminService {
         new AdminRemoveUserFromGroupCommand({
           UserPoolId: USER_POOL_ID,
           Username: username,
-          GroupName: group.GroupName!,
+          GroupName: group.GroupName ?? '',
         }),
       );
     }

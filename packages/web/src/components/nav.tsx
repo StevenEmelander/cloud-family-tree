@@ -8,7 +8,8 @@ import styles from './nav.module.css';
 
 function Icon({ d }: { d: string }) {
   return (
-    <svg className={styles.itemIcon} viewBox="0 0 20 20" fill="currentColor">
+    <svg className={styles.itemIcon} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <title>icon</title>
       <path d={d} />
     </svg>
   );
@@ -48,7 +49,13 @@ export function Nav() {
           {loading ? null : user ? (
             <div className={styles.dropdown}>
               <button type="button" className={styles.menuBtn} aria-label="Menu">
-                <svg className={styles.menuIcon} viewBox="0 0 24 24" fill="currentColor">
+                <svg
+                  className={styles.menuIcon}
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <title>User menu</title>
                   <circle cx="12" cy="8" r="4" />
                   <path d="M12 14c-5.33 0-8 2.67-8 6v1h16v-1c0-3.33-2.67-6-8-6z" />
                 </svg>
@@ -107,7 +114,9 @@ export function Nav() {
                       strokeWidth="1.75"
                       strokeLinecap="round"
                       strokeLinejoin="round"
+                      aria-hidden="true"
                     >
+                      <title>Sign out</title>
                       <path d="M13 3h3a1 1 0 011 1v12a1 1 0 01-1 1h-3M8 14l-4-4m0 0l4-4m-4 4h12" />
                     </svg>
                     Sign Out

@@ -471,6 +471,13 @@
   overflow: hidden;
 }
 
+.imageButton {
+  all: unset;
+  display: block;
+  width: 100%;
+  cursor: pointer;
+}
+
 .image {
   width: 100%;
   aspect-ratio: 1;
@@ -499,6 +506,9 @@
   background: #fef3c7;
   cursor: pointer;
   gap: 0.5rem;
+  border: none;
+  padding: 0;
+  font: inherit;
 }
 
 .pdfPlaceholder:hover {

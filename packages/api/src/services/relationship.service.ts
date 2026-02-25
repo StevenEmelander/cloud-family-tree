@@ -10,9 +10,9 @@ export class RelationshipService {
 
   async create(input: CreateRelationshipInput): Promise<Relationship> {
     const result = validate(createRelationshipSchema, input);
-    if (!result.success) throw new ValidationError(result.errors!);
+    if (!result.success) throw new ValidationError(result.errors);
 
-    const data = result.data!;
+    const data = result.data;
 
     if (data.person1Id === data.person2Id) {
       throw new ValidationError(['person1Id and person2Id cannot be the same']);
@@ -244,6 +244,7 @@ export class RelationshipService {
       await Promise.all(
         parentIdSets.map(async ({ childId, parentIds }) => {
           // Find SPOUSE relationship between the first parent and any other parent in the set
+          // biome-ignore lint/style/noNonNullAssertion: parentIds always has at least one entry
           const firstParent = parentIds[0]!;
           const spouseRels = await this.relationshipRepo.findSpousesOf(firstParent);
           const parentSet = new Set(parentIds);

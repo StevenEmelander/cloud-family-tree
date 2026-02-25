@@ -17,13 +17,15 @@ const { mockService } = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../src/services/user-admin.service', () => ({
-  UserAdminService: vi.fn().mockImplementation(function () { return mockService; }),
+  UserAdminService: vi.fn().mockImplementation(function () {
+    return mockService;
+  }),
 }));
 
-// Static imports — mocks are guaranteed to be in place before module loads
-import { handler as listUsers } from '../../../src/handlers/admin/list-users';
 import { handler as approveUser } from '../../../src/handlers/admin/approve-user';
 import { handler as deleteUser } from '../../../src/handlers/admin/delete-user';
+// Static imports — mocks are guaranteed to be in place before module loads
+import { handler as listUsers } from '../../../src/handlers/admin/list-users';
 import { handler as setUserRole } from '../../../src/handlers/admin/set-user-role';
 
 describe('Admin handlers', () => {

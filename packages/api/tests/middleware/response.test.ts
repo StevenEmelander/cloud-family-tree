@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AppError, NotFoundError, ValidationError } from '../../src/middleware/error-handler';
+import { NotFoundError, ValidationError } from '../../src/middleware/error-handler';
 import { errorResponse, successResponse } from '../../src/middleware/response';
 
 describe('Response middleware', () => {

@@ -23,6 +23,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     // Set custom attribute to track the request
     await cognito.send(
       new AdminUpdateUserAttributesCommand({
+        // biome-ignore lint/style/noNonNullAssertion: guaranteed by CDK
         UserPoolId: process.env.COGNITO_USER_POOL_ID!,
         Username: user.userId,
         UserAttributes: [{ Name: 'custom:editorRequested', Value: new Date().toISOString() }],

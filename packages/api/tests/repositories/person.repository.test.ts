@@ -12,12 +12,24 @@ vi.mock('../../src/lib/dynamodb', () => ({
 
 // Mock the DynamoDB commands to capture inputs
 vi.mock('@aws-sdk/lib-dynamodb', () => ({
-  GetCommand: vi.fn().mockImplementation(function (input) { return { ...input, _cmd: 'Get' }; }),
-  PutCommand: vi.fn().mockImplementation(function (input) { return { ...input, _cmd: 'Put' }; }),
-  QueryCommand: vi.fn().mockImplementation(function (input) { return { ...input, _cmd: 'Query' }; }),
-  UpdateCommand: vi.fn().mockImplementation(function (input) { return { ...input, _cmd: 'Update' }; }),
-  DeleteCommand: vi.fn().mockImplementation(function (input) { return { ...input, _cmd: 'Delete' }; }),
-  BatchWriteCommand: vi.fn().mockImplementation(function (input) { return { ...input, _cmd: 'BatchWrite' }; }),
+  GetCommand: vi.fn().mockImplementation(function (input) {
+    return { ...input, _cmd: 'Get' };
+  }),
+  PutCommand: vi.fn().mockImplementation(function (input) {
+    return { ...input, _cmd: 'Put' };
+  }),
+  QueryCommand: vi.fn().mockImplementation(function (input) {
+    return { ...input, _cmd: 'Query' };
+  }),
+  UpdateCommand: vi.fn().mockImplementation(function (input) {
+    return { ...input, _cmd: 'Update' };
+  }),
+  DeleteCommand: vi.fn().mockImplementation(function (input) {
+    return { ...input, _cmd: 'Delete' };
+  }),
+  BatchWriteCommand: vi.fn().mockImplementation(function (input) {
+    return { ...input, _cmd: 'BatchWrite' };
+  }),
 }));
 
 function makePerson(overrides: Partial<Person> = {}): Person {
@@ -158,7 +170,9 @@ describe('PersonRepository', () => {
 
       const result = await repo.findById('id-1');
       expect(result).not.toBeNull();
+      // biome-ignore lint/style/noNonNullAssertion: test assertion — verified not null on previous line
       expect(result!.firstName).toBe('John');
+      // biome-ignore lint/style/noNonNullAssertion: test assertion — verified not null on previous line
       expect(result!.lastName).toBe('Doe');
       // Should strip DynamoDB keys
       expect((result as Record<string, unknown>).PK).toBeUndefined();

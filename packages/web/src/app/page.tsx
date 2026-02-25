@@ -3,7 +3,7 @@
 import type { Person } from '@cloud-family-tree/shared';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { formatLifespan } from '@/lib/date-utils';
 import { siteConfig } from '@/lib/site-config';
@@ -26,7 +26,7 @@ function HomePageContent() {
   // index 1 = page 2 cursor, etc. Current page = cursorStack.length.
   const [cursorStack, setCursorStack] = useState<(string | undefined)[]>([undefined]);
 
-  async function loadPeople(searchTerm?: string, cursor?: string) {
+  const loadPeople = useCallback(async (searchTerm?: string, cursor?: string) => {
     try {
       setLoading(true);
       setError(null);
@@ -42,7 +42,7 @@ function HomePageContent() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     if (initialSearch && !didAutoSearch.current) {
@@ -50,7 +50,7 @@ function HomePageContent() {
       setHasSearched(true);
       loadPeople(initialSearch);
     }
-  }, [initialSearch]);
+  }, [initialSearch, loadPeople]);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -119,8 +119,8 @@ function HomePageContent() {
               <>
                 <div className={styles.resultCountSkeleton} />
                 <div className={styles.grid}>
-                  {Array.from({ length: 4 }, (_, i) => (
-                    <div key={i} className={styles.skeletonCard}>
+                  {['skeleton-0', 'skeleton-1', 'skeleton-2', 'skeleton-3'].map((id) => (
+                    <div key={id} className={styles.skeletonCard}>
                       <div className={styles.skeletonName} />
                       <div className={styles.skeletonLifespan} />
                     </div>

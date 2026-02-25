@@ -18,7 +18,9 @@ const { mockService } = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../src/services/relationship.service', () => ({
-  RelationshipService: vi.fn().mockImplementation(function () { return mockService; }),
+  RelationshipService: vi.fn().mockImplementation(function () {
+    return mockService;
+  }),
 }));
 
 // Static imports — mocks are guaranteed to be in place before module loads

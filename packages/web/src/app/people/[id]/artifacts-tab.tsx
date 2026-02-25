@@ -171,7 +171,7 @@ export default function ArtifactsTab({
     if (user?.name && !source) {
       setSource(user.name);
     }
-  }, [user?.name]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.name, source]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadArtifacts = useCallback(async () => {
     setLoading(true);
@@ -226,12 +226,12 @@ export default function ArtifactsTab({
     }
   }
 
-  function closeLightbox() {
+  const closeLightbox = useCallback(() => {
     setLightboxArtifact(null);
     lightboxArtifactRef.current = null;
     setLightboxAssociations([]);
     setLightboxAssocLoading(false);
-  }
+  }, []);
 
   // Close lightbox on Escape
   useEffect(() => {
@@ -241,7 +241,7 @@ export default function ArtifactsTab({
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [lightboxArtifact]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [lightboxArtifact, closeLightbox]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Helper: get spouse relationships
   function getSpouseRelationships() {
@@ -270,7 +270,7 @@ export default function ArtifactsTab({
   }
 
   // Helper: check if person died underage (before 18)
-  function diedUnderage(personInfo: RelatedPerson): boolean {
+  function _diedUnderage(personInfo: RelatedPerson): boolean {
     const birthYear = parseYear(personInfo.birthDate);
     const deathYear = parseYear(personInfo.deathDate);
     if (!birthYear || !deathYear) return false;
@@ -313,7 +313,7 @@ export default function ArtifactsTab({
     // Always include the primary person first
     people.set(personId, makeEvidence(personId, personName, 'Primary', true));
 
-    const parents = relationships.filter(
+    const _parents = relationships.filter(
       (r) => r.relationshipType === 'PARENT_CHILD' && r.person2Id === personId,
     );
     const children = relationships.filter(
@@ -412,6 +412,7 @@ export default function ArtifactsTab({
   // Shared fields (file, caption, source) are preserved across type changes
   // Skip this reset when entering edit mode (startEditing sets artifactType and
   // field values in the same batch; this effect would otherwise wipe them out)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally runs only on artifactType change to avoid cascading resets
   useEffect(() => {
     if (editingArtifact) return;
     buildAndSetSuggestions(artifactType, recordDate);
@@ -445,6 +446,7 @@ export default function ArtifactsTab({
     ) {
       const spouses = getSpouseRelationships();
       if (spouses.length > 0) {
+        // biome-ignore lint/style/noNonNullAssertion: guarded by spouses.length > 0 check
         const rel = spouses[0]!;
         setSelectedSpouseRelId(rel.relationshipId);
         if (artifactType === ArtifactType.MARRIAGE_RECORD) {
@@ -536,19 +538,20 @@ export default function ArtifactsTab({
       if (canAdd(r.person1Id))
         options.push({
           id: r.person1Id,
-          name: relatedPeople[r.person1Id]!.name,
+          name: relatedPeople[r.person1Id]?.name ?? '',
           relationship: 'Parent',
         });
     }
     for (const r of spouses) {
       const id = getSpouseId(r);
-      if (canAdd(id)) options.push({ id, name: relatedPeople[id]!.name, relationship: 'Spouse' });
+      if (canAdd(id))
+        options.push({ id, name: relatedPeople[id]?.name ?? '', relationship: 'Spouse' });
     }
     for (const r of children) {
       if (canAdd(r.person2Id))
         options.push({
           id: r.person2Id,
-          name: relatedPeople[r.person2Id]!.name,
+          name: relatedPeople[r.person2Id]?.name ?? '',
           relationship: 'Child',
         });
     }
@@ -608,7 +611,7 @@ export default function ArtifactsTab({
     }
   }
 
-  function getAcceptTypes(): string {
+  function _getAcceptTypes(): string {
     return RECORD_TYPES.has(artifactType) || artifactType === ArtifactType.OTHER
       ? IMAGE_AND_PDF_ACCEPT
       : IMAGE_ACCEPT;
@@ -871,6 +874,7 @@ export default function ArtifactsTab({
     if (artifact.artifactType === 'MARRIAGE_RECORD' || artifact.artifactType === 'DIVORCE_RECORD') {
       const spouses = getSpouseRelationships();
       if (spouses.length > 0) {
+        // biome-ignore lint/style/noNonNullAssertion: guarded by spouses.length > 0 check
         const rel = spouses[0]!;
         setSelectedSpouseRelId(rel.relationshipId);
         if (artifact.artifactType === 'MARRIAGE_RECORD') {
@@ -1174,52 +1178,50 @@ export default function ArtifactsTab({
           {uploadError && <p className={styles.uploadError}>{uploadError}</p>}
 
           {/* File selection (upload mode only) */}
-          {!editingArtifact && (
-            <>
-              {!selectedFile ? (
-                <div className={styles.fileDropArea}>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept={IMAGE_AND_PDF_ACCEPT}
-                    className={styles.fileInputHidden}
-                    onChange={handleFileSelect}
-                    disabled={uploading}
-                    id="artifact-file-input"
-                  />
-                  <label htmlFor="artifact-file-input" className={styles.fileDropLabel}>
-                    Choose a file (JPEG, PNG, WebP, or PDF)
-                  </label>
-                </div>
-              ) : (
-                <div className={styles.filePreviewArea}>
-                  {filePreviewUrl ? (
-                    <img src={filePreviewUrl} alt="Preview" className={styles.filePreviewImage} />
-                  ) : (
-                    <div className={styles.filePreviewPdf}>
-                      <span className={styles.pdfIcon}>PDF</span>
-                    </div>
-                  )}
-                  <div className={styles.filePreviewInfo}>
-                    <span className={styles.filePreviewName}>{selectedFile.name}</span>
-                    <span className={styles.filePreviewSize}>
-                      {selectedFile.size < 1024 * 1024
-                        ? `${(selectedFile.size / 1024).toFixed(0)} KB`
-                        : `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB`}
-                    </span>
-                    <button
-                      type="button"
-                      className={styles.filePreviewRemove}
-                      onClick={clearFile}
-                      disabled={uploading}
-                    >
-                      Change file
-                    </button>
+          {!editingArtifact &&
+            (!selectedFile ? (
+              <div className={styles.fileDropArea}>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={IMAGE_AND_PDF_ACCEPT}
+                  className={styles.fileInputHidden}
+                  onChange={handleFileSelect}
+                  disabled={uploading}
+                  id="artifact-file-input"
+                />
+                <label htmlFor="artifact-file-input" className={styles.fileDropLabel}>
+                  Choose a file (JPEG, PNG, WebP, or PDF)
+                </label>
+              </div>
+            ) : (
+              <div className={styles.filePreviewArea}>
+                {filePreviewUrl ? (
+                  // biome-ignore lint/performance/noImgElement: local blob URL preview not suitable for next/image
+                  <img src={filePreviewUrl} alt="Preview" className={styles.filePreviewImage} />
+                ) : (
+                  <div className={styles.filePreviewPdf}>
+                    <span className={styles.pdfIcon}>PDF</span>
                   </div>
+                )}
+                <div className={styles.filePreviewInfo}>
+                  <span className={styles.filePreviewName}>{selectedFile.name}</span>
+                  <span className={styles.filePreviewSize}>
+                    {selectedFile.size < 1024 * 1024
+                      ? `${(selectedFile.size / 1024).toFixed(0)} KB`
+                      : `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB`}
+                  </span>
+                  <button
+                    type="button"
+                    className={styles.filePreviewRemove}
+                    onClick={clearFile}
+                    disabled={uploading}
+                  >
+                    Change file
+                  </button>
                 </div>
-              )}
-            </>
-          )}
+              </div>
+            ))}
 
           {/* Fields (shown after file selected in upload mode, or always in edit mode) */}
           {(selectedFile || editingArtifact) && (
@@ -1346,6 +1348,7 @@ export default function ArtifactsTab({
                       })}
                     </select>
                   </label>
+                  {/* biome-ignore lint/a11y/noLabelWithoutControl: FlexDateInput renders its own input elements */}
                   <label className={styles.fieldLabel}>
                     Marriage Date
                     <FlexDateInput
@@ -1388,6 +1391,7 @@ export default function ArtifactsTab({
                       })}
                     </select>
                   </label>
+                  {/* biome-ignore lint/a11y/noLabelWithoutControl: FlexDateInput renders its own input elements */}
                   <label className={styles.fieldLabel}>
                     Divorce Date
                     <FlexDateInput
@@ -1412,6 +1416,7 @@ export default function ArtifactsTab({
 
               {artifactType === ArtifactType.CENSUS_RECORD && (
                 <div className={styles.typeFields}>
+                  {/* biome-ignore lint/a11y/noLabelWithoutControl: FlexDateInput renders its own input elements */}
                   <label className={styles.fieldLabel}>
                     Date
                     <FlexDateInput
@@ -1436,6 +1441,7 @@ export default function ArtifactsTab({
 
               {artifactType === ArtifactType.IMMIGRATION_RECORD && (
                 <div className={styles.typeFields}>
+                  {/* biome-ignore lint/a11y/noLabelWithoutControl: FlexDateInput renders its own input elements */}
                   <label className={styles.fieldLabel}>
                     Date
                     <FlexDateInput
@@ -1472,6 +1478,7 @@ export default function ArtifactsTab({
               {/* Generic date for BIRTH_RECORD and DEATH_RECORD */}
               {(artifactType === ArtifactType.BIRTH_RECORD ||
                 artifactType === ArtifactType.DEATH_RECORD) && (
+                // biome-ignore lint/a11y/noLabelWithoutControl: FlexDateInput renders its own input elements
                 <label className={styles.fieldLabel}>
                   Date
                   <FlexDateInput
@@ -1730,7 +1737,8 @@ export default function ArtifactsTab({
           {filtered.map((artifact) => (
             <div key={`${artifact.artifactId}-${artifact.personId}`} className={styles.card}>
               {artifact.contentType === 'application/pdf' ? (
-                <div
+                <button
+                  type="button"
                   className={styles.pdfPlaceholder}
                   onClick={async () => {
                     try {
@@ -1745,16 +1753,21 @@ export default function ArtifactsTab({
                   <span className={styles.pdfLabel}>
                     {TYPE_LABELS[artifact.artifactType] || 'Document'}
                   </span>
-                </div>
+                </button>
               ) : artifact.viewUrl ? (
-                <img
-                  src={artifact.viewUrl}
-                  alt={artifact.caption || artifact.fileName}
-                  className={styles.image}
-                  loading="lazy"
+                <button
+                  type="button"
+                  className={styles.imageButton}
                   onClick={() => openLightbox(artifact)}
-                  style={{ cursor: 'pointer' }}
-                />
+                >
+                  {/* biome-ignore lint/performance/noImgElement: S3 presigned URL not compatible with next/image */}
+                  <img
+                    src={artifact.viewUrl}
+                    alt={artifact.caption || artifact.fileName}
+                    className={styles.image}
+                    loading="lazy"
+                  />
+                </button>
               ) : (
                 <div className={styles.imagePlaceholder}>Unable to load</div>
               )}
@@ -1776,7 +1789,7 @@ export default function ArtifactsTab({
                 )}
                 {artifact.source &&
                   (() => {
-                    const { text, href } = formatSource(artifact.source!);
+                    const { text, href } = formatSource(artifact.source ?? '');
                     return (
                       <p className={styles.source}>
                         Source:{' '}
@@ -1839,8 +1852,7 @@ export default function ArtifactsTab({
       )}
 
       {/* Lightbox overlay */}
-      {lightboxArtifact &&
-        lightboxArtifact.viewUrl &&
+      {lightboxArtifact?.viewUrl &&
         (() => {
           const lbType = lightboxArtifact.artifactType as ArtifactType;
           const lbSource = lightboxArtifact.source ? formatSource(lightboxArtifact.source) : null;
@@ -1860,13 +1872,27 @@ export default function ArtifactsTab({
           }
 
           return (
-            <div className={styles.lightboxOverlay} onClick={closeLightbox}>
-              <div className={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
+            // biome-ignore lint/a11y/noStaticElementInteractions: lightbox backdrop click-to-dismiss pattern
+            <div
+              className={styles.lightboxOverlay}
+              role="presentation"
+              onClick={closeLightbox}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') closeLightbox();
+              }}
+            >
+              <div
+                className={styles.lightboxContent}
+                role="dialog"
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+              >
                 <button type="button" className={styles.lightboxClose} onClick={closeLightbox}>
                   &times;
                 </button>
 
                 <div className={styles.lightboxImageContainer}>
+                  {/* biome-ignore lint/performance/noImgElement: S3 presigned URL not compatible with next/image */}
                   <img
                     src={lightboxArtifact.viewUrl}
                     alt={lightboxArtifact.caption || lightboxArtifact.fileName}

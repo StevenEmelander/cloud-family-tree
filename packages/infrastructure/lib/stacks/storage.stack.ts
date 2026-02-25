@@ -27,7 +27,7 @@ export class StorageStack extends cdk.Stack {
         {
           allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT, s3.HttpMethods.POST],
           allowedOrigins: corsOrigins,
-          allowedHeaders: ['*'],
+          allowedHeaders: ['Content-Type', 'Content-Length'],
           maxAge: 3600,
         },
       ],

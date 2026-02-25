@@ -29,9 +29,9 @@ export class ArtifactService {
 
   async createUploadUrl(input: CreateArtifactInput, userId: string): Promise<PresignedUrlResponse> {
     const result = validate(createArtifactSchema, input);
-    if (!result.success) throw new ValidationError(result.errors!);
+    if (!result.success) throw new ValidationError(result.errors);
 
-    const data = result.data!;
+    const data = result.data;
 
     // Verify person exists
     const person = await this.personRepo.findById(data.personId);
@@ -81,9 +81,9 @@ export class ArtifactService {
     userId: string,
   ): Promise<Artifact> {
     const result = validate(createArtifactSchema, input);
-    if (!result.success) throw new ValidationError(result.errors!);
+    if (!result.success) throw new ValidationError(result.errors);
 
-    const data = result.data!;
+    const data = result.data;
     const now = isoNow();
     const artifactId = uuid();
 
@@ -125,7 +125,7 @@ export class ArtifactService {
     user: AuthenticatedUser,
   ): Promise<Artifact> {
     const result = validate(updateArtifactSchema, input);
-    if (!result.success) throw new ValidationError(result.errors!);
+    if (!result.success) throw new ValidationError(result.errors);
 
     const existing = await this.artifactRepo.findById(artifactId, personId);
     if (!existing) throw new NotFoundError('Artifact', artifactId);
@@ -135,7 +135,7 @@ export class ArtifactService {
       throw new ForbiddenError('You can only edit artifacts you uploaded');
     }
 
-    const data = result.data!;
+    const data = result.data;
     const clearableFields = ['caption', 'source', 'date'] as const;
     const updates: Record<string, unknown> = { ...data };
 

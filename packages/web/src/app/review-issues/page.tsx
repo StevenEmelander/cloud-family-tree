@@ -38,15 +38,21 @@ export default function ReviewIssuesPage() {
     setLoading(true);
     setError(null);
     try {
-      const [bugData, issueData] = await Promise.all([
-        api.listAllEntries('bug'),
-        api.listAllEntries('issue'),
-      ]);
-      setBugs(bugData.items);
+      // Page through all entries
+      const allEntries: Entry[] = [];
+      let cursor: string | undefined;
+      do {
+        const page = await api.listAllEntries({ cursor });
+        allEntries.push(...page.items);
+        cursor = page.lastEvaluatedKey;
+      } while (cursor);
+
+      setBugs(allEntries.filter((e) => e.entryType === 'bug'));
+      const issues = allEntries.filter((e) => e.entryType === 'issue');
 
       // Group issues by person and fetch names
       const byPerson = new Map<string, number>();
-      for (const issue of issueData.items) {
+      for (const issue of issues) {
         byPerson.set(issue.personId, (byPerson.get(issue.personId) || 0) + 1);
       }
       const groups: PersonIssueGroup[] = await Promise.all(

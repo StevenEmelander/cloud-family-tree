@@ -1,10 +1,6 @@
 import type { ZodSchema } from 'zod';
 
-export interface ValidationResult<T> {
-  success: boolean;
-  data?: T;
-  errors?: string[];
-}
+export type ValidationResult<T> = { success: true; data: T } | { success: false; errors: string[] };
 
 export function validate<T>(schema: ZodSchema<T>, data: unknown): ValidationResult<T> {
   const result = schema.safeParse(data);

@@ -2,10 +2,14 @@ import type { APIGatewayProxyResult } from 'aws-lambda';
 import { AppError, ValidationError } from './error-handler';
 
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': process.env.FRONTEND_DOMAIN || '*',
   'Access-Control-Allow-Headers': 'Content-Type,Authorization',
   'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
   'Content-Type': 'application/json',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'X-XSS-Protection': '1; mode=block',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
 };
 
 export function successResponse(statusCode: number, data: unknown): APIGatewayProxyResult {
@@ -33,7 +37,7 @@ export function errorResponse(error: unknown): APIGatewayProxyResult {
     };
   }
 
-  console.error('Unhandled error:', error);
+  console.error('Unhandled error:', error instanceof Error ? error.message : 'Unknown error');
   return {
     statusCode: 500,
     headers: CORS_HEADERS,

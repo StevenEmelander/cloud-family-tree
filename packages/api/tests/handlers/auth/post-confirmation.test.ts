@@ -6,13 +6,21 @@ const { mockSend, mockCognitoSend } = vi.hoisted(() => ({
 }));
 
 vi.mock('@aws-sdk/client-sns', () => ({
-  SNSClient: vi.fn().mockImplementation(function () { return { send: mockSend }; }),
-  PublishCommand: vi.fn().mockImplementation(function (input) { return input; }),
+  SNSClient: vi.fn().mockImplementation(function () {
+    return { send: mockSend };
+  }),
+  PublishCommand: vi.fn().mockImplementation(function (input) {
+    return input;
+  }),
 }));
 
 vi.mock('@aws-sdk/client-cognito-identity-provider', () => ({
-  CognitoIdentityProviderClient: vi.fn().mockImplementation(function () { return { send: mockCognitoSend }; }),
-  AdminAddUserToGroupCommand: vi.fn().mockImplementation(function (input) { return input; }),
+  CognitoIdentityProviderClient: vi.fn().mockImplementation(function () {
+    return { send: mockCognitoSend };
+  }),
+  AdminAddUserToGroupCommand: vi.fn().mockImplementation(function (input) {
+    return input;
+  }),
 }));
 
 import { handler } from '../../../src/handlers/auth/post-confirmation';

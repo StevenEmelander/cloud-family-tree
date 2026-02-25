@@ -8,8 +8,10 @@ let verifier: ReturnType<typeof CognitoJwtVerifier.create> | null = null;
 function getVerifier() {
   if (!verifier) {
     verifier = CognitoJwtVerifier.create({
+      // biome-ignore lint/style/noNonNullAssertion: guaranteed by CDK
       userPoolId: process.env.COGNITO_USER_POOL_ID!,
       tokenUse: 'id',
+      // biome-ignore lint/style/noNonNullAssertion: guaranteed by CDK
       clientId: process.env.COGNITO_CLIENT_ID!,
     });
   }

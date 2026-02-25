@@ -130,6 +130,7 @@ describe('Auth middleware', () => {
         const event = makeEvent({ headers: { Authorization: 'Bearer token' } });
         const user = await authorize(event, 'read');
         expect(user).not.toBeNull();
+        // biome-ignore lint/style/noNonNullAssertion: test assertion — verified not null on previous line
         expect(user!.userId).toBe('user-123');
       });
     });

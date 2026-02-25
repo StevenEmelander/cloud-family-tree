@@ -28,7 +28,8 @@ function toGedcomDate(isoDate: string | undefined): string | undefined {
   // Month-year: "1883-09" → "SEP 1883"
   if (parts.length === 2) {
     const [year, month] = parts;
-    const monthIdx = Number.parseInt(month!, 10) - 1;
+    const monthStr = month ?? '';
+    const monthIdx = Number.parseInt(monthStr, 10) - 1;
     if (monthIdx < 0 || monthIdx > 11) return undefined;
     return `${months[monthIdx]} ${year}`;
   }
@@ -58,7 +59,7 @@ function wrapText(level: number, tag: string, text: string): string[] {
   const concLevel = level + 1;
 
   for (let i = 0; i < textLines.length; i++) {
-    const textLine = textLines[i]!;
+    const textLine = textLines[i] ?? '';
     let lineTag: string;
     let tagLevel: number;
 
@@ -162,6 +163,7 @@ export class GedcomExportService {
 
     // Person records
     for (const person of allPeople) {
+      // biome-ignore lint/style/noNonNullAssertion: pointer is guaranteed to exist — assigned in the loop above for every person
       const pointer = idToPointer.get(person.personId)!;
       lines.push(`0 ${pointer} INDI`);
       const givenNames = person.middleName
@@ -203,8 +205,9 @@ export class GedcomExportService {
 
       // Link to families
       for (const [famKey, famPointer] of famPointers.entries()) {
+        // biome-ignore lint/style/noNonNullAssertion: famKey comes from iterating families.keys(), so the entry always exists
         const family = families.get(famKey)!;
-        if (family.husbandId === person.personId || family.wifeId === person.personId) {
+        if (family.spouse1Id === person.personId || family.spouse2Id === person.personId) {
           lines.push(`1 FAMS ${famPointer}`);
         }
         if (family.childIds.includes(person.personId)) {
@@ -215,15 +218,16 @@ export class GedcomExportService {
 
     // Family records
     for (const [famKey, family] of families.entries()) {
+      // biome-ignore lint/style/noNonNullAssertion: famKey comes from iterating families which has matching famPointers entries
       const famPointer = famPointers.get(famKey)!;
       lines.push(`0 ${famPointer} FAM`);
 
-      if (family.husbandId) {
-        const ptr = idToPointer.get(family.husbandId);
+      if (family.spouse1Id) {
+        const ptr = idToPointer.get(family.spouse1Id);
         if (ptr) lines.push(`1 HUSB ${ptr}`);
       }
-      if (family.wifeId) {
-        const ptr = idToPointer.get(family.wifeId);
+      if (family.spouse2Id) {
+        const ptr = idToPointer.get(family.spouse2Id);
         if (ptr) lines.push(`1 WIFE ${ptr}`);
       }
       for (const childId of family.childIds) {
@@ -265,23 +269,23 @@ export class GedcomExportService {
     const spouseRels = relationships.filter((r) => r.relationshipType === 'SPOUSE');
     for (const rel of spouseRels) {
       const famKey = [rel.person1Id, rel.person2Id].sort().join('#');
-      // Assign HUSB/WIFE based on actual gender
+      // Assign GEDCOM HUSB/WIFE roles based on gender (required by GEDCOM 5.5.1 spec)
       const person1 = people.get(rel.person1Id);
       const person2 = people.get(rel.person2Id);
-      let husbandId = rel.person1Id;
-      let wifeId = rel.person2Id;
+      let spouse1Id = rel.person1Id;
+      let spouse2Id = rel.person2Id;
       if (person1 && person2) {
         if (person1.gender === 'FEMALE' && person2.gender !== 'FEMALE') {
-          husbandId = rel.person2Id;
-          wifeId = rel.person1Id;
+          spouse1Id = rel.person2Id;
+          spouse2Id = rel.person1Id;
         } else if (person2.gender === 'MALE' && person1.gender !== 'MALE') {
-          husbandId = rel.person2Id;
-          wifeId = rel.person1Id;
+          spouse1Id = rel.person2Id;
+          spouse2Id = rel.person1Id;
         }
       }
       families.set(famKey, {
-        husbandId,
-        wifeId,
+        spouse1Id,
+        spouse2Id,
         childIds: [],
         marriageDate: rel.metadata?.marriageDate,
         marriagePlace: rel.metadata?.marriagePlace,
@@ -303,8 +307,8 @@ export class GedcomExportService {
 
     // Add children to existing families or create new ones
     for (const [, family] of families.entries()) {
-      const children1 = parentToChildren.get(family.husbandId!) || [];
-      const children2 = parentToChildren.get(family.wifeId!) || [];
+      const children1 = family.spouse1Id ? parentToChildren.get(family.spouse1Id) || [] : [];
+      const children2 = family.spouse2Id ? parentToChildren.get(family.spouse2Id) || [] : [];
       // Children of this couple are those who appear in both parent lists
       const commonChildren = children1.filter((c) => children2.includes(c));
       family.childIds = [...new Set(commonChildren)];
@@ -322,12 +326,12 @@ export class GedcomExportService {
           if (existing) {
             existing.childIds.push(childId);
           } else {
-            // Assign HUSB or WIFE based on gender
+            // Assign GEDCOM HUSB/WIFE role based on gender (required by spec)
             const parent = people.get(parentId);
             const isFemale = parent?.gender === 'FEMALE';
             families.set(famKey, {
-              husbandId: isFemale ? undefined : parentId,
-              wifeId: isFemale ? parentId : undefined,
+              spouse1Id: isFemale ? undefined : parentId,
+              spouse2Id: isFemale ? parentId : undefined,
               childIds: [childId],
             });
           }
@@ -340,8 +344,8 @@ export class GedcomExportService {
 }
 
 interface Family {
-  husbandId?: string;
-  wifeId?: string;
+  spouse1Id?: string; // GEDCOM HUSB role
+  spouse2Id?: string; // GEDCOM WIFE role
   childIds: string[];
   marriageDate?: string;
   marriagePlace?: string;

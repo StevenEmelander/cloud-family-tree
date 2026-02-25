@@ -3,6 +3,7 @@ import type { NativeAttributeValue } from '@aws-sdk/util-dynamodb';
 import type { Entry, EntryType } from '@cloud-family-tree/shared';
 import { ENTITY_PREFIX, GSI_NAMES } from '@cloud-family-tree/shared';
 import { docClient, TableNames } from '../lib/dynamodb';
+import { AppError } from '../middleware/error-handler';
 import type { QueryResult } from './base.repository';
 import { BaseRepository } from './base.repository';
 
@@ -66,12 +67,17 @@ export class EntryRepository extends BaseRepository {
     cursor?: string,
     entryType?: EntryType,
   ): Promise<QueryResult<Entry>> {
-    const exclusiveStartKey = cursor
-      ? (JSON.parse(Buffer.from(cursor, 'base64').toString()) as Record<
+    let exclusiveStartKey: Record<string, NativeAttributeValue> | undefined;
+    if (cursor) {
+      try {
+        exclusiveStartKey = JSON.parse(Buffer.from(cursor, 'base64').toString()) as Record<
           string,
           NativeAttributeValue
-        >)
-      : undefined;
+        >;
+      } catch {
+        throw new AppError(400, 'Invalid cursor');
+      }
+    }
 
     const expressionValues: Record<string, NativeAttributeValue> = {
       ':pk': `${ENTITY_PREFIX.PERSON}#${personId}`,
@@ -99,27 +105,31 @@ export class EntryRepository extends BaseRepository {
     };
   }
 
-  async findAllByType(entryType: EntryType): Promise<Entry[]> {
-    const items: Entry[] = [];
-    let lastKey: Record<string, NativeAttributeValue> | undefined;
-
-    do {
-      const result = await docClient.send(
-        new ScanCommand({
-          TableName: this.tableName,
-          FilterExpression: 'entryType = :et',
-          ExpressionAttributeValues: { ':et': entryType },
-          ExclusiveStartKey: lastKey,
-        }),
-      );
-
-      if (result.Items) {
-        items.push(...result.Items.map((r) => this.fromRecord(r as Record<string, unknown>)));
+  async findAll(limit?: number, cursor?: string): Promise<QueryResult<Entry>> {
+    let exclusiveStartKey: Record<string, NativeAttributeValue> | undefined;
+    if (cursor) {
+      try {
+        exclusiveStartKey = JSON.parse(Buffer.from(cursor, 'base64').toString()) as Record<
+          string,
+          NativeAttributeValue
+        >;
+      } catch {
+        throw new AppError(400, 'Invalid cursor');
       }
-      lastKey = result.LastEvaluatedKey;
-    } while (lastKey);
+    }
 
-    return items;
+    const result = await docClient.send(
+      new ScanCommand({
+        TableName: this.tableName,
+        Limit: limit,
+        ExclusiveStartKey: exclusiveStartKey,
+      }),
+    );
+
+    return {
+      items: (result.Items || []).map((r) => this.fromRecord(r as Record<string, unknown>)),
+      lastEvaluatedKey: result.LastEvaluatedKey,
+    };
   }
 
   async deleteAllForPerson(personId: string): Promise<void> {

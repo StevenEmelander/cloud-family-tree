@@ -81,11 +81,14 @@ export function FlexDateInput({
         disabled={disabled || !month}
       >
         <option value="">--</option>
-        {Array.from({ length: maxDay }, (_, i) => (
-          <option key={i + 1} value={String(i + 1).padStart(2, '0')}>
-            {i + 1}
-          </option>
-        ))}
+        {Array.from({ length: maxDay }, (_, i) => {
+          const dayVal = String(i + 1).padStart(2, '0');
+          return (
+            <option key={dayVal} value={dayVal}>
+              {i + 1}
+            </option>
+          );
+        })}
       </select>
     </div>
   );

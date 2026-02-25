@@ -2,6 +2,7 @@ import type { NativeAttributeValue } from '@aws-sdk/util-dynamodb';
 import type { Artifact } from '@cloud-family-tree/shared';
 import { ENTITY_PREFIX, GSI_NAMES } from '@cloud-family-tree/shared';
 import { TableNames } from '../lib/dynamodb';
+import { AppError } from '../middleware/error-handler';
 import type { QueryResult } from './base.repository';
 import { BaseRepository } from './base.repository';
 
@@ -60,12 +61,17 @@ export class ArtifactRepository extends BaseRepository {
     limit?: number,
     cursor?: string,
   ): Promise<QueryResult<Artifact>> {
-    const exclusiveStartKey = cursor
-      ? (JSON.parse(Buffer.from(cursor, 'base64').toString()) as Record<
+    let exclusiveStartKey: Record<string, NativeAttributeValue> | undefined;
+    if (cursor) {
+      try {
+        exclusiveStartKey = JSON.parse(Buffer.from(cursor, 'base64').toString()) as Record<
           string,
           NativeAttributeValue
-        >)
-      : undefined;
+        >;
+      } catch {
+        throw new AppError(400, 'Invalid cursor');
+      }
+    }
 
     const result = await this.query<Record<string, unknown>>({
       indexName: GSI_NAMES.ARTIFACT_PERSON_INDEX,

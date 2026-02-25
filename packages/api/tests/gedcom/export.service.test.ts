@@ -4,15 +4,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GedcomExportService } from '../../src/gedcom/export.service';
 
 vi.mock('../../src/repositories/person.repository', () => ({
-  PersonRepository: vi.fn().mockImplementation(function () { return ({
-    iterateAll: vi.fn(),
-  }); }),
+  PersonRepository: vi.fn().mockImplementation(function () {
+    return {
+      iterateAll: vi.fn(),
+    };
+  }),
 }));
 
 vi.mock('../../src/repositories/relationship.repository', () => ({
-  RelationshipRepository: vi.fn().mockImplementation(function () { return ({
-    findByPerson: vi.fn(),
-  }); }),
+  RelationshipRepository: vi.fn().mockImplementation(function () {
+    return {
+      findByPerson: vi.fn(),
+    };
+  }),
 }));
 
 function makePerson(overrides: Partial<Person> = {}): Person {

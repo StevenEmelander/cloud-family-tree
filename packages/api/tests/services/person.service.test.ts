@@ -6,34 +6,42 @@ import { PersonService } from '../../src/services/person.service';
 
 // Mock all repositories
 vi.mock('../../src/repositories/person.repository', () => ({
-  PersonRepository: vi.fn().mockImplementation(function () { return ({
-    findById: vi.fn(),
-    findByExactName: vi.fn().mockResolvedValue([]),
-    create: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    findAll: vi.fn(),
-    searchByName: vi.fn(),
-  }); }),
+  PersonRepository: vi.fn().mockImplementation(function () {
+    return {
+      findById: vi.fn(),
+      findByExactName: vi.fn().mockResolvedValue([]),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      findAll: vi.fn(),
+      searchByName: vi.fn(),
+    };
+  }),
 }));
 
 vi.mock('../../src/repositories/relationship.repository', () => ({
-  RelationshipRepository: vi.fn().mockImplementation(function () { return ({
-    deleteAllForPerson: vi.fn(),
-    findChildrenOf: vi.fn().mockResolvedValue([]),
-  }); }),
+  RelationshipRepository: vi.fn().mockImplementation(function () {
+    return {
+      deleteAllForPerson: vi.fn(),
+      findChildrenOf: vi.fn().mockResolvedValue([]),
+    };
+  }),
 }));
 
 vi.mock('../../src/repositories/artifact.repository', () => ({
-  ArtifactRepository: vi.fn().mockImplementation(function () { return ({
-    deleteAllForPerson: vi.fn(),
-  }); }),
+  ArtifactRepository: vi.fn().mockImplementation(function () {
+    return {
+      deleteAllForPerson: vi.fn(),
+    };
+  }),
 }));
 
 vi.mock('../../src/repositories/entry.repository', () => ({
-  EntryRepository: vi.fn().mockImplementation(function () { return ({
-    deleteAllForPerson: vi.fn(),
-  }); }),
+  EntryRepository: vi.fn().mockImplementation(function () {
+    return {
+      deleteAllForPerson: vi.fn(),
+    };
+  }),
 }));
 
 function makePerson(overrides: Partial<Person> = {}): Person {
