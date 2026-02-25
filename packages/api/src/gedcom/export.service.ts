@@ -1,5 +1,5 @@
-import { isoNow } from '@cloud-family-tree/shared';
 import type { GedcomExportResult, Person, Relationship } from '@cloud-family-tree/shared';
+import { isoNow } from '@cloud-family-tree/shared';
 import { PersonRepository } from '../repositories/person.repository';
 import { RelationshipRepository } from '../repositories/relationship.repository';
 
@@ -164,7 +164,9 @@ export class GedcomExportService {
     for (const person of allPeople) {
       const pointer = idToPointer.get(person.personId)!;
       lines.push(`0 ${pointer} INDI`);
-      const givenNames = person.middleName ? `${person.firstName} ${person.middleName}` : person.firstName;
+      const givenNames = person.middleName
+        ? `${person.firstName} ${person.middleName}`
+        : person.firstName;
       lines.push(...gedcomLine(1, 'NAME', `${givenNames} /${person.lastName}/`));
       lines.push(...gedcomLine(2, 'GIVN', givenNames));
       lines.push(...gedcomLine(2, 'SURN', person.lastName));

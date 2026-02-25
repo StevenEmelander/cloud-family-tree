@@ -1,20 +1,27 @@
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { API_CONFIG, ARTIFACT_CONFIG, createArtifactSchema, updateArtifactSchema, isoNow, validate } from '@cloud-family-tree/shared';
 import type {
   Artifact,
   ArtifactType,
+  AuthenticatedUser,
   CreateArtifactInput,
-  UpdateArtifactInput,
   PaginatedResponse,
   PresignedUrlResponse,
+  UpdateArtifactInput,
+} from '@cloud-family-tree/shared';
+import {
+  API_CONFIG,
+  ARTIFACT_CONFIG,
+  createArtifactSchema,
+  isoNow,
+  updateArtifactSchema,
+  validate,
 } from '@cloud-family-tree/shared';
 import { v4 as uuid } from 'uuid';
 import { BucketNames, s3Client } from '../lib/s3';
-import type { AuthenticatedUser } from '@cloud-family-tree/shared';
 import { ForbiddenError, NotFoundError, ValidationError } from '../middleware/error-handler';
-import { PersonRepository } from '../repositories/person.repository';
 import { ArtifactRepository } from '../repositories/artifact.repository';
+import { PersonRepository } from '../repositories/person.repository';
 
 export class ArtifactService {
   private readonly artifactRepo = new ArtifactRepository();
@@ -69,7 +76,10 @@ export class ArtifactService {
     return { uploadUrl, s3Key, expiresAt };
   }
 
-  async confirmUpload(input: CreateArtifactInput & { s3Key: string }, userId: string): Promise<Artifact> {
+  async confirmUpload(
+    input: CreateArtifactInput & { s3Key: string },
+    userId: string,
+  ): Promise<Artifact> {
     const result = validate(createArtifactSchema, input);
     if (!result.success) throw new ValidationError(result.errors!);
 
@@ -90,7 +100,9 @@ export class ArtifactService {
       source: data.source,
       date: data.date,
       isPrimary: data.isPrimary || false,
-      ...(data.metadata && Object.keys(data.metadata).length > 0 ? { metadata: data.metadata } : {}),
+      ...(data.metadata && Object.keys(data.metadata).length > 0
+        ? { metadata: data.metadata }
+        : {}),
       uploadedAt: now,
       uploadedBy: userId,
     };
@@ -203,9 +215,7 @@ export class ArtifactService {
     if (!artifact) return; // Already deleted — nothing to do
 
     // Uploader or admins can delete
-    const canDelete =
-      artifact.uploadedBy === user.userId ||
-      user.role === 'admins';
+    const canDelete = artifact.uploadedBy === user.userId || user.role === 'admins';
     if (!canDelete) {
       throw new ForbiddenError('You can only delete artifacts you uploaded');
     }
@@ -218,10 +228,12 @@ export class ArtifactService {
 
     // Delete the file from S3
     try {
-      await s3Client.send(new DeleteObjectCommand({
-        Bucket: artifact.s3Bucket,
-        Key: artifact.s3Key,
-      }));
+      await s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: artifact.s3Bucket,
+          Key: artifact.s3Key,
+        }),
+      );
     } catch {
       // Log but don't fail — DynamoDB records are already cleaned up
     }
@@ -261,7 +273,10 @@ export class ArtifactService {
     await this.artifactRepo.delete(artifactId, personId);
   }
 
-  async getAssociations(artifactId: string, knownPersonId: string): Promise<{ personId: string; name: string }[]> {
+  async getAssociations(
+    artifactId: string,
+    knownPersonId: string,
+  ): Promise<{ personId: string; name: string }[]> {
     const artifact = await this.artifactRepo.findById(artifactId, knownPersonId);
     if (!artifact) throw new NotFoundError('Artifact', artifactId);
 

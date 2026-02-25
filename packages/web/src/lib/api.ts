@@ -48,10 +48,7 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     if (body.errors && Array.isArray(body.errors)) {
-      throw new ApiValidationError(
-        body.errors.join('; '),
-        body.errors,
-      );
+      throw new ApiValidationError(body.errors.join('; '), body.errors);
     }
     throw new Error(body.error || body.message || `API error: ${res.status}`);
   }
@@ -97,7 +94,10 @@ export const api = {
       otherParent: Record<string, string>;
       spouseParents: Record<string, string[]>;
       parentMarriages: Record<string, { marriageDate?: string; divorceDate?: string }>;
-      relatedPeople: Record<string, { name: string; gender: string; birthDate?: string; deathDate?: string }>;
+      relatedPeople: Record<
+        string,
+        { name: string; gender: string; birthDate?: string; deathDate?: string }
+      >;
     }>(`/people/${personId}/relationships?view=family-tree`),
 
   createRelationship: (data: Record<string, unknown>) =>
@@ -166,7 +166,10 @@ export const api = {
   deleteArtifact: (artifactId: string, personId: string) =>
     apiFetch<void>(`/artifacts/${artifactId}?personId=${personId}`, { method: 'DELETE' }),
 
-  associateArtifact: (artifactId: string, data: { sourcePersonId: string; targetPersonIds: string[] }) =>
+  associateArtifact: (
+    artifactId: string,
+    data: { sourcePersonId: string; targetPersonIds: string[] },
+  ) =>
     apiFetch<{ message: string }>(`/artifacts/${artifactId}/associate`, {
       method: 'POST',
       body: JSON.stringify(data),

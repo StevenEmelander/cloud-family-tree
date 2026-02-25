@@ -1,12 +1,12 @@
 'use client';
 
-import { api } from '@/lib/api';
-import { formatLifespan } from '@/lib/date-utils';
-import { siteConfig } from '@/lib/site-config';
 import type { Person } from '@cloud-family-tree/shared';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
+import { api } from '@/lib/api';
+import { formatLifespan } from '@/lib/date-utils';
+import { siteConfig } from '@/lib/site-config';
 import styles from './page.module.css';
 
 const PAGE_SIZE = 10;
@@ -152,9 +152,12 @@ function HomePageContent() {
                           className={styles.personCard}
                         >
                           <span className={styles.personName}>
-                            {person.firstName} {person.middleName ? `${person.middleName} ` : ''}{person.lastName}
+                            {person.firstName} {person.middleName ? `${person.middleName} ` : ''}
+                            {person.lastName}
                           </span>
-                          <span className={styles.personLifespan}>{formatLifespan(person.birthDate, person.deathDate)}</span>
+                          <span className={styles.personLifespan}>
+                            {formatLifespan(person.birthDate, person.deathDate)}
+                          </span>
                         </Link>
                       ))}
                     </div>

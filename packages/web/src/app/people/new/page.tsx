@@ -1,11 +1,11 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { QualifiedDateInput } from '@/components/QualifiedDateInput';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { canEditPeople } from '@/lib/auth-utils';
-import { QualifiedDateInput } from '@/components/QualifiedDateInput';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import styles from './page.module.css';
 
 export default function NewPersonPage() {
@@ -27,8 +27,18 @@ export default function NewPersonPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (authLoading) return <div className={styles.container}><p>Loading...</p></div>;
-  if (!canEdit) return <div className={styles.container}><p>You do not have permission to create people.</p></div>;
+  if (authLoading)
+    return (
+      <div className={styles.container}>
+        <p>Loading...</p>
+      </div>
+    );
+  if (!canEdit)
+    return (
+      <div className={styles.container}>
+        <p>You do not have permission to create people.</p>
+      </div>
+    );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

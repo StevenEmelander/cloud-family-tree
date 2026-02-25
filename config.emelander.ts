@@ -18,7 +18,7 @@ export const config = {
     'Tracing the Emelander (Amelander) family from the island of Ameland in Friesland, Netherlands across generations. Search below to explore details in our interactive family tree.',
   ctaHeading: 'Help build our family tree',
   ctaBody:
-    'Know something we\'re missing? Register for a free account to browse the tree and add comments. Request editor access to add family members, dates, places, and photos.',
+    "Know something we're missing? Register for a free account to browse the tree and add comments. Request editor access to add family members, dates, places, and photos.",
 
   // About Page
   // Links use markdown syntax: [text](url)
@@ -27,7 +27,7 @@ export const config = {
   // Paragraphs separated by \n\n, **bold** for emphasis
   about: {
     dedication:
-      'EmelanderFamily.com was created as both a genealogy project and a technical experiment, an effort to document the Emelander (Amelander) family while building a modern framework for exploring family history. The site is powered by CloudFamilyTree, a system I developed to learn how to design and deploy complex, data-driven applications using Claude AI. It grew out of a hands-on learning process and a desire to create something others could enjoy. What began as a fun challenge has grown into a structured, evolving archive connecting our family\'s roots from Friesland in the Netherlands to later generations in the United States.\n\nThis project builds on the work of [Don Emelander](/goto?name=Donald+A+Emelander), who had a passion for our family heritage and loved sharing it with anyone who showed interest, including distant relatives like myself. In 2011, Don sent me a package in the mail that included his research, filled with his handwritten annotations. That package is what, years later, inspired me to build this site. Don passed away in 2021 before it was completed, but it is my hope that this site continues his spirit of exploring and sharing our family\'s history.',
+      "EmelanderFamily.com was created as both a genealogy project and a technical experiment, an effort to document the Emelander (Amelander) family while building a modern framework for exploring family history. The site is powered by CloudFamilyTree, a system I developed to learn how to design and deploy complex, data-driven applications using Claude AI. It grew out of a hands-on learning process and a desire to create something others could enjoy. What began as a fun challenge has grown into a structured, evolving archive connecting our family's roots from Friesland in the Netherlands to later generations in the United States.\n\nThis project builds on the work of [Don Emelander](/goto?name=Donald+A+Emelander), who had a passion for our family heritage and loved sharing it with anyone who showed interest, including distant relatives like myself. In 2011, Don sent me a package in the mail that included his research, filled with his handwritten annotations. That package is what, years later, inspired me to build this site. Don passed away in 2021 before it was completed, but it is my hope that this site continues his spirit of exploring and sharing our family's history.",
     signature:
       '-Steven Emelander Jr (grandson of [Robert W Emelander](/goto?name=Robert+W+Emelander))',
     faqSections: [

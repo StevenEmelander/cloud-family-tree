@@ -1,8 +1,8 @@
 'use client';
 
-import { api } from '@/lib/api';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef } from 'react';
+import { api } from '@/lib/api';
 
 function GotoContent() {
   const searchParams = useSearchParams();
@@ -20,22 +20,27 @@ function GotoContent() {
     const middleParts = parts.slice(1, -1).join(' ').replace(/\./g, '').toUpperCase();
     const searchTerm = lastName ? `${firstName} ${lastName}` : firstName;
 
-    api.listPeople({ search: searchTerm, limit: 20 }).then((data) => {
-      if (data.items.length > 0) {
-        let best = data.items[0]!;
-        if (middleParts) {
-          const match = data.items.find((p) =>
-            p.middleName && p.middleName.replace(/\./g, '').toUpperCase().startsWith(middleParts)
-          );
-          if (match) best = match;
+    api
+      .listPeople({ search: searchTerm, limit: 20 })
+      .then((data) => {
+        if (data.items.length > 0) {
+          let best = data.items[0]!;
+          if (middleParts) {
+            const match = data.items.find(
+              (p) =>
+                p.middleName &&
+                p.middleName.replace(/\./g, '').toUpperCase().startsWith(middleParts),
+            );
+            if (match) best = match;
+          }
+          router.replace(`/people/${best.personId}`);
+        } else {
+          router.replace(`/?search=${encodeURIComponent(name)}`);
         }
-        router.replace(`/people/${best.personId}`);
-      } else {
+      })
+      .catch(() => {
         router.replace(`/?search=${encodeURIComponent(name)}`);
-      }
-    }).catch(() => {
-      router.replace(`/?search=${encodeURIComponent(name)}`);
-    });
+      });
   }, [name, router]);
 
   return (

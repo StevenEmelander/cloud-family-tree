@@ -1,17 +1,13 @@
 'use client';
 
+import type { Entry } from '@cloud-family-tree/shared';
+import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { formatRelativeDate } from '@/lib/date-utils';
-import type { Entry } from '@cloud-family-tree/shared';
-import { useCallback, useEffect, useState } from 'react';
 import styles from './page.module.css';
 
-export default function WallTab({
-  personId,
-}: {
-  personId: string;
-}) {
+export default function WallTab({ personId }: { personId: string }) {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admins';
 
@@ -155,7 +151,10 @@ export default function WallTab({
             <button
               type="button"
               className={styles.btnCancel}
-              onClick={() => { setShowForm(false); setNewContent(''); }}
+              onClick={() => {
+                setShowForm(false);
+                setNewContent('');
+              }}
             >
               Cancel
             </button>
@@ -187,12 +186,25 @@ export default function WallTab({
                         Edit
                       </button>
                     )}
-                    {canDelete(entry) && (
-                      confirmingDeleteId === entry.entryId ? (
+                    {canDelete(entry) &&
+                      (confirmingDeleteId === entry.entryId ? (
                         <span className={styles.confirmDelete}>
                           <span className={styles.confirmText}>Delete?</span>
-                          <button type="button" className={styles.btnConfirmYes} onClick={() => handleDelete(entry.entryId)} disabled={!!deletingId}>Yes</button>
-                          <button type="button" className={styles.btnConfirmNo} onClick={() => setConfirmingDeleteId(null)}>No</button>
+                          <button
+                            type="button"
+                            className={styles.btnConfirmYes}
+                            onClick={() => handleDelete(entry.entryId)}
+                            disabled={!!deletingId}
+                          >
+                            Yes
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.btnConfirmNo}
+                            onClick={() => setConfirmingDeleteId(null)}
+                          >
+                            No
+                          </button>
                         </span>
                       ) : (
                         <button
@@ -203,8 +215,7 @@ export default function WallTab({
                         >
                           &times;
                         </button>
-                      )
-                    )}
+                      ))}
                   </div>
                 )}
               </div>

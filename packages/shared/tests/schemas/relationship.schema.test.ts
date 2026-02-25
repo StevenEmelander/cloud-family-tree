@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { RelationshipType } from '../../src/types/relationship';
 import { createRelationshipSchema } from '../../src/schemas/relationship.schema';
+import { RelationshipType } from '../../src/types/relationship';
 
 describe('createRelationshipSchema', () => {
   const validInput = {

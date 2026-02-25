@@ -1,30 +1,30 @@
-import { Gender, RelationshipType } from '@cloud-family-tree/shared';
 import type { Person, Relationship } from '@cloud-family-tree/shared';
+import { Gender, RelationshipType } from '@cloud-family-tree/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotFoundError, ValidationError } from '../../src/middleware/error-handler';
 import { RelationshipService } from '../../src/services/relationship.service';
 
 vi.mock('../../src/repositories/relationship.repository', () => ({
-  RelationshipRepository: vi.fn().mockImplementation(() => ({
+  RelationshipRepository: vi.fn().mockImplementation(function () { return ({
     findById: vi.fn(),
     create: vi.fn(),
     delete: vi.fn(),
     findByPerson: vi.fn(),
     findParentsOf: vi.fn(),
     findChildrenOf: vi.fn(),
-  })),
+  }); }),
 }));
 
 vi.mock('../../src/repositories/person.repository', () => ({
-  PersonRepository: vi.fn().mockImplementation(() => ({
+  PersonRepository: vi.fn().mockImplementation(function () { return ({
     findById: vi.fn(),
     findByIdForTree: vi.fn(),
-  })),
+  }); }),
 }));
 
-const PERSON1_ID = '11111111-1111-1111-1111-111111111111';
-const PERSON2_ID = '22222222-2222-2222-2222-222222222222';
-const PERSON3_ID = '33333333-3333-3333-3333-333333333333';
+const PERSON1_ID = '11111111-1111-4111-8111-111111111111';
+const PERSON2_ID = '22222222-2222-4222-8222-222222222222';
+const PERSON3_ID = '33333333-3333-4333-8333-333333333333';
 
 function makePerson(id: string): Person {
   return {

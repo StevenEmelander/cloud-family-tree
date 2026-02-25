@@ -10,8 +10,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     await authorize(event, 'read');
     const id = event.pathParameters?.id;
     const personId = event.queryStringParameters?.personId;
-    if (!id || !personId)
-      return errorResponse(new Error('Missing id or personId parameter'));
+    if (!id || !personId) return errorResponse(new Error('Missing id or personId parameter'));
     const url = await service.getViewUrl(id, personId);
     return successResponse(200, { url });
   } catch (error) {

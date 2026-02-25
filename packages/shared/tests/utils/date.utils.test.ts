@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isValidIsoDate, isoNow } from '../../src/utils/date.utils';
+import { isoNow, isValidIsoDate } from '../../src/utils/date.utils';
 
 describe('isoNow', () => {
   it('returns a valid ISO 8601 timestamp', () => {

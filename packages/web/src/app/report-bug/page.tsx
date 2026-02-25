@@ -1,9 +1,9 @@
 'use client';
 
-import { api } from '@/lib/api';
-import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 import styles from './page.module.css';
 
 export default function ReportBugPage() {
@@ -52,8 +52,8 @@ export default function ReportBugPage() {
       ) : (
         <form onSubmit={handleSubmit} className={styles.form}>
           <p className={styles.guidance}>
-            Please include: steps to reproduce, what you expected, what happened instead,
-            and any error messages you saw.
+            Please include: steps to reproduce, what you expected, what happened instead, and any
+            error messages you saw.
           </p>
           <textarea
             value={content}
@@ -64,11 +64,7 @@ export default function ReportBugPage() {
             rows={6}
           />
           {error && <p className={styles.error}>{error}</p>}
-          <button
-            type="submit"
-            className={styles.btn}
-            disabled={submitting || !content.trim()}
-          >
+          <button type="submit" className={styles.btn} disabled={submitting || !content.trim()}>
             {submitting ? 'Submitting...' : 'Submit Bug Report'}
           </button>
         </form>

@@ -1,12 +1,12 @@
 'use client';
 
+import type { AdminUserListItem, GedcomImportResult } from '@cloud-family-tree/shared';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { formatRelativeDate } from '@/lib/date-utils';
 import { siteConfig } from '@/lib/site-config';
-import type { AdminUserListItem, GedcomImportResult } from '@cloud-family-tree/shared';
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './page.module.css';
 
 const USERS_PER_PAGE = 20;
@@ -212,7 +212,8 @@ export default function AdminPage() {
               <div className={styles.approvalInfo}>
                 <div className={styles.approvalName}>{u.name || u.email}</div>
                 <div className={styles.approvalMeta}>
-                  {u.name ? `${u.email} · ` : ''}Requested editor access {formatRelativeDate(u.editorRequested!)}
+                  {u.name ? `${u.email} · ` : ''}Requested editor access{' '}
+                  {formatRelativeDate(u.editorRequested!)}
                 </div>
               </div>
               <div className={styles.approvalActions}>
@@ -267,9 +268,7 @@ export default function AdminPage() {
                     <option value="editor">Editor</option>
                     <option value="admin">Admin</option>
                   </select>
-                  {u.userId === user?.email && (
-                    <span className={styles.selfLabel}>(You)</span>
-                  )}
+                  {u.userId === user?.email && <span className={styles.selfLabel}>(You)</span>}
                   <button
                     type="button"
                     className={styles.btnDelete}
@@ -324,8 +323,8 @@ export default function AdminPage() {
         <div className={styles.gedcomCard}>
           <h3 className={styles.gedcomLabel}>Import GEDCOM</h3>
           <p className={styles.gedcomDesc}>
-            Upload a GEDCOM (.ged) file to add people and relationships to the tree. Existing
-            data will not be replaced.
+            Upload a GEDCOM (.ged) file to add people and relationships to the tree. Existing data
+            will not be replaced.
           </p>
 
           {!selectedFile && !importing && (

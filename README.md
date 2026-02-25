@@ -174,4 +174,4 @@ Requires valid AWS credentials and a deployed stack. See [docs/integration-test-
 
 ## License
 
-[MIT](LICENSE) — Copyright (c) 2025 Steven Emelander
+[MIT](LICENSE) — Copyright (c) 2026 Steven Emelander

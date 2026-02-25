@@ -1,17 +1,13 @@
 'use client';
 
+import type { Entry } from '@cloud-family-tree/shared';
+import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { formatRelativeDate } from '@/lib/date-utils';
-import type { Entry } from '@cloud-family-tree/shared';
-import { useCallback, useEffect, useState } from 'react';
 import styles from './page.module.css';
 
-export default function IssuesTab({
-  personId,
-}: {
-  personId: string;
-}) {
+export default function IssuesTab({ personId }: { personId: string }) {
   const { user } = useAuth();
   const isEditor = user?.role === 'editors' || user?.role === 'admins';
 
@@ -96,7 +92,9 @@ export default function IssuesTab({
 
       {user && showForm && (
         <div className={styles.entryForm}>
-          <p style={{ fontSize: '0.813rem', color: 'var(--color-fg-muted)', marginBottom: '0.5rem' }}>
+          <p
+            style={{ fontSize: '0.813rem', color: 'var(--color-fg-muted)', marginBottom: '0.5rem' }}
+          >
             Report data errors, missing info, or corrections needed for this person.
           </p>
           <textarea
@@ -121,7 +119,10 @@ export default function IssuesTab({
             <button
               type="button"
               className={styles.btnCancel}
-              onClick={() => { setShowForm(false); setNewContent(''); }}
+              onClick={() => {
+                setShowForm(false);
+                setNewContent('');
+              }}
             >
               Cancel
             </button>
@@ -144,8 +145,21 @@ export default function IssuesTab({
                     {confirmingDeleteId === issue.entryId ? (
                       <span className={styles.confirmDelete}>
                         <span className={styles.confirmText}>Resolve?</span>
-                        <button type="button" className={styles.btnConfirmYes} onClick={() => handleResolve(issue.entryId)} disabled={!!deletingId}>Yes</button>
-                        <button type="button" className={styles.btnConfirmNo} onClick={() => setConfirmingDeleteId(null)}>No</button>
+                        <button
+                          type="button"
+                          className={styles.btnConfirmYes}
+                          onClick={() => handleResolve(issue.entryId)}
+                          disabled={!!deletingId}
+                        >
+                          Yes
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.btnConfirmNo}
+                          onClick={() => setConfirmingDeleteId(null)}
+                        >
+                          No
+                        </button>
                       </span>
                     ) : (
                       <button

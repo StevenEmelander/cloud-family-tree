@@ -1,12 +1,12 @@
 'use client';
 
-import { api } from '@/lib/api';
-import { useAuth } from '@/lib/auth-context';
-import { formatRelativeDate } from '@/lib/date-utils';
 import type { Entry } from '@cloud-family-tree/shared';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
+import { formatRelativeDate } from '@/lib/date-utils';
 import styles from './page.module.css';
 
 interface PersonIssueGroup {
@@ -117,11 +117,28 @@ export default function ReviewIssuesPage() {
                           {confirmingId === bug.entryId ? (
                             <span className={styles.confirm}>
                               <span>Resolve?</span>
-                              <button type="button" className={styles.btnYes} onClick={() => handleResolve(bug)} disabled={!!resolvingId}>Yes</button>
-                              <button type="button" className={styles.btnNo} onClick={() => setConfirmingId(null)}>No</button>
+                              <button
+                                type="button"
+                                className={styles.btnYes}
+                                onClick={() => handleResolve(bug)}
+                                disabled={!!resolvingId}
+                              >
+                                Yes
+                              </button>
+                              <button
+                                type="button"
+                                className={styles.btnNo}
+                                onClick={() => setConfirmingId(null)}
+                              >
+                                No
+                              </button>
                             </span>
                           ) : (
-                            <button type="button" className={styles.btnResolve} onClick={() => setConfirmingId(bug.entryId)}>
+                            <button
+                              type="button"
+                              className={styles.btnResolve}
+                              onClick={() => setConfirmingId(bug.entryId)}
+                            >
                               Resolve
                             </button>
                           )}
@@ -143,12 +160,13 @@ export default function ReviewIssuesPage() {
               <div className={styles.list}>
                 {issueGroups.map((group) => (
                   <div key={group.personId} className={styles.card}>
-                    <Link href={`/people/${group.personId}?tab=issues`} className={styles.personLink}>
+                    <Link
+                      href={`/people/${group.personId}?tab=issues`}
+                      className={styles.personLink}
+                    >
                       {group.name}
                     </Link>
-                    {group.count > 1 && (
-                      <span className={styles.date}>{group.count} issues</span>
-                    )}
+                    {group.count > 1 && <span className={styles.date}>{group.count} issues</span>}
                   </div>
                 ))}
               </div>

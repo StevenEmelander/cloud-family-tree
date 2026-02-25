@@ -3,23 +3,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { mockSend } = vi.hoisted(() => ({ mockSend: vi.fn() }));
 
 vi.mock('@aws-sdk/client-cognito-identity-provider', () => ({
-  CognitoIdentityProviderClient: vi.fn().mockImplementation(() => ({ send: mockSend })),
-  ListUsersCommand: vi.fn().mockImplementation((input) => ({ ...input, _type: 'ListUsers' })),
+  CognitoIdentityProviderClient: vi.fn().mockImplementation(function () { return { send: mockSend }; }),
+  ListUsersCommand: vi.fn().mockImplementation(function (input) { return { ...input, _type: 'ListUsers' }; }),
   AdminListGroupsForUserCommand: vi
     .fn()
-    .mockImplementation((input) => ({ ...input, _type: 'AdminListGroups' })),
+    .mockImplementation(function (input) { return { ...input, _type: 'AdminListGroups' }; }),
   AdminAddUserToGroupCommand: vi
     .fn()
-    .mockImplementation((input) => ({ ...input, _type: 'AdminAddToGroup' })),
+    .mockImplementation(function (input) { return { ...input, _type: 'AdminAddToGroup' }; }),
   AdminRemoveUserFromGroupCommand: vi
     .fn()
-    .mockImplementation((input) => ({ ...input, _type: 'AdminRemoveFromGroup' })),
+    .mockImplementation(function (input) { return { ...input, _type: 'AdminRemoveFromGroup' }; }),
   AdminDeleteUserCommand: vi
     .fn()
-    .mockImplementation((input) => ({ ...input, _type: 'AdminDeleteUser' })),
+    .mockImplementation(function (input) { return { ...input, _type: 'AdminDeleteUser' }; }),
   AdminUpdateUserAttributesCommand: vi
     .fn()
-    .mockImplementation((input) => ({ ...input, _type: 'AdminUpdateUserAttributes' })),
+    .mockImplementation(function (input) { return { ...input, _type: 'AdminUpdateUserAttributes' }; }),
 }));
 
 import { UserAdminService } from '../../src/services/user-admin.service';
@@ -140,6 +140,4 @@ describe('UserAdminService', () => {
       expect(addCall[0].Username).toBe('newuser');
     });
   });
-
 });
-

@@ -1,5 +1,5 @@
-import { ENTITY_PREFIX, GSI_NAMES, Gender } from '@cloud-family-tree/shared';
 import type { Person } from '@cloud-family-tree/shared';
+import { ENTITY_PREFIX, Gender, GSI_NAMES } from '@cloud-family-tree/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PersonRepository } from '../../src/repositories/person.repository';
 
@@ -12,12 +12,12 @@ vi.mock('../../src/lib/dynamodb', () => ({
 
 // Mock the DynamoDB commands to capture inputs
 vi.mock('@aws-sdk/lib-dynamodb', () => ({
-  GetCommand: vi.fn().mockImplementation((input) => ({ ...input, _cmd: 'Get' })),
-  PutCommand: vi.fn().mockImplementation((input) => ({ ...input, _cmd: 'Put' })),
-  QueryCommand: vi.fn().mockImplementation((input) => ({ ...input, _cmd: 'Query' })),
-  UpdateCommand: vi.fn().mockImplementation((input) => ({ ...input, _cmd: 'Update' })),
-  DeleteCommand: vi.fn().mockImplementation((input) => ({ ...input, _cmd: 'Delete' })),
-  BatchWriteCommand: vi.fn().mockImplementation((input) => ({ ...input, _cmd: 'BatchWrite' })),
+  GetCommand: vi.fn().mockImplementation(function (input) { return { ...input, _cmd: 'Get' }; }),
+  PutCommand: vi.fn().mockImplementation(function (input) { return { ...input, _cmd: 'Put' }; }),
+  QueryCommand: vi.fn().mockImplementation(function (input) { return { ...input, _cmd: 'Query' }; }),
+  UpdateCommand: vi.fn().mockImplementation(function (input) { return { ...input, _cmd: 'Update' }; }),
+  DeleteCommand: vi.fn().mockImplementation(function (input) { return { ...input, _cmd: 'Delete' }; }),
+  BatchWriteCommand: vi.fn().mockImplementation(function (input) { return { ...input, _cmd: 'BatchWrite' }; }),
 }));
 
 function makePerson(overrides: Partial<Person> = {}): Person {

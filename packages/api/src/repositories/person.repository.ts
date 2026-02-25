@@ -1,9 +1,9 @@
 import type { NativeAttributeValue } from '@aws-sdk/util-dynamodb';
-import { ENTITY_PREFIX, GSI_NAMES } from '@cloud-family-tree/shared';
 import type { Person } from '@cloud-family-tree/shared';
+import { ENTITY_PREFIX, GSI_NAMES } from '@cloud-family-tree/shared';
 import { TableNames } from '../lib/dynamodb';
-import { BaseRepository } from './base.repository';
 import type { QueryResult } from './base.repository';
+import { BaseRepository } from './base.repository';
 
 interface PersonRecord extends Record<string, unknown> {
   PK: string;
@@ -32,7 +32,10 @@ export class PersonRepository extends BaseRepository {
       SK: ENTITY_PREFIX.METADATA,
       GSI1PK: ENTITY_PREFIX.PERSON,
       GSI1SK: `${ENTITY_PREFIX.LASTNAME}#${person.lastName.toUpperCase()}#${ENTITY_PREFIX.FIRSTNAME}#${person.firstName.toUpperCase()}`,
-      searchName: [person.firstName, person.middleName, person.lastName].filter(Boolean).join(' ').toUpperCase(),
+      searchName: [person.firstName, person.middleName, person.lastName]
+        .filter(Boolean)
+        .join(' ')
+        .toUpperCase(),
     };
   }
 
@@ -63,10 +66,14 @@ export class PersonRepository extends BaseRepository {
       if (raw) {
         const existing = this.fromRecord(raw);
         const firstName = updates.firstName || existing.firstName;
-        const middleName = updates.middleName !== undefined ? updates.middleName : existing.middleName;
+        const middleName =
+          updates.middleName !== undefined ? updates.middleName : existing.middleName;
         const lastName = updates.lastName || existing.lastName;
         enrichedUpdates.GSI1SK = `${ENTITY_PREFIX.LASTNAME}#${lastName.toUpperCase()}#${ENTITY_PREFIX.FIRSTNAME}#${firstName.toUpperCase()}`;
-        enrichedUpdates.searchName = [firstName, middleName, lastName].filter(Boolean).join(' ').toUpperCase();
+        enrichedUpdates.searchName = [firstName, middleName, lastName]
+          .filter(Boolean)
+          .join(' ')
+          .toUpperCase();
       }
     }
 

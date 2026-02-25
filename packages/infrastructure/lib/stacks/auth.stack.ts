@@ -73,10 +73,7 @@ export class AuthStack extends cdk.Stack {
       new iam.PolicyStatement({
         actions: ['cognito-idp:AdminAddUserToGroup'],
         resources: [
-          cdk.Arn.format(
-            { service: 'cognito-idp', resource: 'userpool', resourceName: '*' },
-            this,
-          ),
+          cdk.Arn.format({ service: 'cognito-idp', resource: 'userpool', resourceName: '*' }, this),
         ],
       }),
     );

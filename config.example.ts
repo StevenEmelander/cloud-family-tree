@@ -31,7 +31,7 @@ export const config = {
   // Separate paragraphs with \n\n, bold with **text**
   about: {
     dedication:
-      'Welcome to our family tree. This site was built using **CloudFamilyTree**, an open-source self-hosted genealogy platform.\n\nAdd your family\'s story here — who started this project, what inspired it, and who you\'re honoring with it.',
+      "Welcome to our family tree. This site was built using **CloudFamilyTree**, an open-source self-hosted genealogy platform.\n\nAdd your family's story here — who started this project, what inspired it, and who you're honoring with it.",
     signature: '-Your Name',
     faqSections: [
       {
@@ -65,7 +65,7 @@ export const config = {
             icon: '🐛',
             question: 'How do I report a bug or incorrect information?',
             answer:
-              'For data errors or corrections, visit the person\'s page and use the Issues tab. For site bugs, use [Report Bug](/report-bug) from the menu. Both require a registered account.',
+              "For data errors or corrections, visit the person's page and use the Issues tab. For site bugs, use [Report Bug](/report-bug) from the menu. Both require a registered account.",
           },
         ],
       },
@@ -132,7 +132,7 @@ export const config = {
   // ── Monitoring & Alerts ───────────────────────────────────────────────────
   monitoring: {
     alertEmail: 'admin@example.com', // receives CloudWatch alarm notifications
-    monthlyBudgetUSD: 25,            // AWS budget alert threshold
+    monthlyBudgetUSD: 25, // AWS budget alert threshold
   },
 } as const;
 

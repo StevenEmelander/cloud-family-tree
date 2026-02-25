@@ -1,10 +1,10 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { displayRole } from '@/lib/site-config';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import styles from './page.module.css';
 
 export default function SettingsPage() {
@@ -90,7 +90,12 @@ export default function SettingsPage() {
         </p>
         {user.role && (
           <p className={styles.role}>
-            Role: <span className={`${styles.roleBadge} ${user.role === 'admins' ? styles.roleBadgeAdmin : user.role === 'editors' ? styles.roleBadgeEditor : styles.roleBadgeVisitor}`}>{displayRole(user.role)}</span>
+            Role:{' '}
+            <span
+              className={`${styles.roleBadge} ${user.role === 'admins' ? styles.roleBadgeAdmin : user.role === 'editors' ? styles.roleBadgeEditor : styles.roleBadgeVisitor}`}
+            >
+              {displayRole(user.role)}
+            </span>
           </p>
         )}
       </div>
@@ -99,12 +104,13 @@ export default function SettingsPage() {
         <div className={styles.card}>
           <h2 className={styles.cardTitle}>Request Editor Access</h2>
           <p className={styles.cardDesc}>
-            As a visitor, you can browse the family tree and contribute to memorial walls. To add or edit family
-            members, relationships, and photos, request editor access below.
+            As a visitor, you can browse the family tree and contribute to memorial walls. To add or
+            edit family members, relationships, and photos, request editor access below.
           </p>
           {editorRequestStatus || user.editorRequested ? (
             <p className={styles.success}>
-              {editorRequestStatus || 'Editor access requested — an administrator will review your request.'}
+              {editorRequestStatus ||
+                'Editor access requested — an administrator will review your request.'}
             </p>
           ) : (
             <>

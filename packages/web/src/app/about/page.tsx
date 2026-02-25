@@ -21,12 +21,21 @@ function renderRichText(text: string): ReactNode[] {
       const [, label, url] = linkMatch;
       if (url!.startsWith('mailto:') || url!.startsWith('http')) {
         return (
-          <a key={i} href={url} target={url!.startsWith('http') ? '_blank' : undefined} rel={url!.startsWith('http') ? 'noopener noreferrer' : undefined}>
+          <a
+            key={i}
+            href={url}
+            target={url!.startsWith('http') ? '_blank' : undefined}
+            rel={url!.startsWith('http') ? 'noopener noreferrer' : undefined}
+          >
             {label}
           </a>
         );
       }
-      return <Link key={i} href={url!}>{label}</Link>;
+      return (
+        <Link key={i} href={url!}>
+          {label}
+        </Link>
+      );
     }
     // Bold: **text**
     const boldMatch = part.match(/^\*\*(.*?)\*\*$/);

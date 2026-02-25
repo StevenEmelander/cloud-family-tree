@@ -1,18 +1,18 @@
-import { Gender, RelationshipType } from '@cloud-family-tree/shared';
 import type { Person, Relationship } from '@cloud-family-tree/shared';
+import { Gender, RelationshipType } from '@cloud-family-tree/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GedcomExportService } from '../../src/gedcom/export.service';
 
 vi.mock('../../src/repositories/person.repository', () => ({
-  PersonRepository: vi.fn().mockImplementation(() => ({
+  PersonRepository: vi.fn().mockImplementation(function () { return ({
     iterateAll: vi.fn(),
-  })),
+  }); }),
 }));
 
 vi.mock('../../src/repositories/relationship.repository', () => ({
-  RelationshipRepository: vi.fn().mockImplementation(() => ({
+  RelationshipRepository: vi.fn().mockImplementation(function () { return ({
     findByPerson: vi.fn(),
-  })),
+  }); }),
 }));
 
 function makePerson(overrides: Partial<Person> = {}): Person {
@@ -35,8 +35,7 @@ describe('GedcomExportService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     service = new GedcomExportService();
-    personRepo = (service as unknown as { personRepo: typeof personRepo })
-      .personRepo;
+    personRepo = (service as unknown as { personRepo: typeof personRepo }).personRepo;
     relationshipRepo = (service as unknown as { relationshipRepo: typeof relationshipRepo })
       .relationshipRepo;
   });

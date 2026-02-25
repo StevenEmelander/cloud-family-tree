@@ -10,8 +10,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     await authorize(event, 'write');
     const artifactId = event.pathParameters?.id;
     const personId = event.pathParameters?.personId;
-    if (!artifactId || !personId)
-      return errorResponse(new Error('Missing artifactId or personId'));
+    if (!artifactId || !personId) return errorResponse(new Error('Missing artifactId or personId'));
 
     await service.disassociatePerson(artifactId, personId);
     return successResponse(204, null);

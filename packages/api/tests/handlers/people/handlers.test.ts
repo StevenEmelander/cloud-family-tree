@@ -1,5 +1,5 @@
-import { Gender } from '@cloud-family-tree/shared';
 import type { Person } from '@cloud-family-tree/shared';
+import { Gender } from '@cloud-family-tree/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeEvent } from '../../../src/handlers/test-helpers';
 
@@ -21,8 +21,15 @@ const { mockService } = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../src/services/person.service', () => ({
-  PersonService: vi.fn().mockImplementation(() => mockService),
+  PersonService: vi.fn().mockImplementation(function () { return mockService; }),
 }));
+
+// Static imports — mocks are guaranteed to be in place before module loads
+import { handler as getPerson } from '../../../src/handlers/people/get';
+import { handler as listPeople } from '../../../src/handlers/people/list';
+import { handler as createPerson } from '../../../src/handlers/people/create';
+import { handler as updatePerson } from '../../../src/handlers/people/update';
+import { handler as deletePerson } from '../../../src/handlers/people/delete';
 
 const person: Person = {
   personId: 'id-1',
@@ -41,10 +48,9 @@ describe('Person handlers', () => {
   describe('GET /people/:id', () => {
     it('returns person by id', async () => {
       mockService.getById.mockResolvedValue(person);
-      const { handler } = await import('../../../src/handlers/people/get');
 
       const event = makeEvent({ pathParameters: { id: 'id-1' } });
-      const result = await handler(event);
+      const result = await getPerson(event);
 
       expect(result.statusCode).toBe(200);
       const body = JSON.parse(result.body);
@@ -53,10 +59,8 @@ describe('Person handlers', () => {
     });
 
     it('returns error when id is missing', async () => {
-      const { handler } = await import('../../../src/handlers/people/get');
-
       const event = makeEvent({ pathParameters: null });
-      const result = await handler(event);
+      const result = await getPerson(event);
 
       expect(result.statusCode).toBe(500);
     });
@@ -64,10 +68,9 @@ describe('Person handlers', () => {
     it('returns 404 when person not found', async () => {
       const { NotFoundError } = await import('../../../src/middleware/error-handler');
       mockService.getById.mockRejectedValue(new NotFoundError('Person', 'xyz'));
-      const { handler } = await import('../../../src/handlers/people/get');
 
       const event = makeEvent({ pathParameters: { id: 'xyz' } });
-      const result = await handler(event);
+      const result = await getPerson(event);
 
       expect(result.statusCode).toBe(404);
     });
@@ -76,10 +79,9 @@ describe('Person handlers', () => {
   describe('GET /people', () => {
     it('lists all people without search', async () => {
       mockService.list.mockResolvedValue({ items: [person], count: 1 });
-      const { handler } = await import('../../../src/handlers/people/list');
 
       const event = makeEvent({ queryStringParameters: null });
-      const result = await handler(event);
+      const result = await listPeople(event);
 
       expect(result.statusCode).toBe(200);
       const body = JSON.parse(result.body);
@@ -89,10 +91,9 @@ describe('Person handlers', () => {
 
     it('searches people when search param provided', async () => {
       mockService.search.mockResolvedValue({ items: [person], count: 1 });
-      const { handler } = await import('../../../src/handlers/people/list');
 
       const event = makeEvent({ queryStringParameters: { search: 'Doe' } });
-      const result = await handler(event);
+      const result = await listPeople(event);
 
       expect(result.statusCode).toBe(200);
       expect(mockService.search).toHaveBeenCalledWith('Doe', undefined, undefined);
@@ -100,12 +101,11 @@ describe('Person handlers', () => {
 
     it('passes limit and cursor params', async () => {
       mockService.list.mockResolvedValue({ items: [], count: 0 });
-      const { handler } = await import('../../../src/handlers/people/list');
 
       const event = makeEvent({
         queryStringParameters: { limit: '50', cursor: 'abc123' },
       });
-      await handler(event);
+      await listPeople(event);
 
       expect(mockService.list).toHaveBeenCalledWith(50, 'abc123');
     });
@@ -114,13 +114,12 @@ describe('Person handlers', () => {
   describe('POST /people', () => {
     it('creates person and returns 201', async () => {
       mockService.create.mockResolvedValue(person);
-      const { handler } = await import('../../../src/handlers/people/create');
 
       const event = makeEvent({
         httpMethod: 'POST',
         body: JSON.stringify({ firstName: 'John', lastName: 'Doe', gender: 'MALE' }),
       });
-      const result = await handler(event);
+      const result = await createPerson(event);
 
       expect(result.statusCode).toBe(201);
       const body = JSON.parse(result.body);
@@ -130,12 +129,11 @@ describe('Person handlers', () => {
     it('returns 400 for validation errors', async () => {
       const { ValidationError } = await import('../../../src/middleware/error-handler');
       mockService.create.mockRejectedValue(new ValidationError(['firstName is required']));
-      const { handler } = await import('../../../src/handlers/people/create');
 
       const event = makeEvent({
         body: JSON.stringify({ gender: 'MALE' }),
       });
-      const result = await handler(event);
+      const result = await createPerson(event);
 
       expect(result.statusCode).toBe(400);
       const body = JSON.parse(result.body);
@@ -146,13 +144,12 @@ describe('Person handlers', () => {
   describe('PUT /people/:id', () => {
     it('updates person', async () => {
       mockService.update.mockResolvedValue({ ...person, firstName: 'Jane' });
-      const { handler } = await import('../../../src/handlers/people/update');
 
       const event = makeEvent({
         pathParameters: { id: 'id-1' },
         body: JSON.stringify({ firstName: 'Jane' }),
       });
-      const result = await handler(event);
+      const result = await updatePerson(event);
 
       expect(result.statusCode).toBe(200);
       const body = JSON.parse(result.body);
@@ -163,10 +160,9 @@ describe('Person handlers', () => {
   describe('DELETE /people/:id', () => {
     it('deletes person and returns 204', async () => {
       mockService.delete.mockResolvedValue(undefined);
-      const { handler } = await import('../../../src/handlers/people/delete');
 
       const event = makeEvent({ pathParameters: { id: 'id-1' } });
-      const result = await handler(event);
+      const result = await deletePerson(event);
 
       expect(result.statusCode).toBe(204);
       expect(mockService.delete).toHaveBeenCalledWith('id-1');

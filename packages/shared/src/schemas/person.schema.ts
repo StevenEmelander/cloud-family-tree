@@ -53,9 +53,7 @@ const clearableDate = z
   .union([isoDate, z.literal('')])
   .transform((v) => (v === '' ? undefined : v));
 const clearableString = (max: number) =>
-  z
-    .union([z.string().max(max).trim(), z.literal('')])
-    .transform((v) => (v === '' ? undefined : v));
+  z.union([z.string().max(max).trim(), z.literal('')]).transform((v) => (v === '' ? undefined : v));
 
 export const updatePersonSchema = z
   .object({
@@ -63,10 +61,16 @@ export const updatePersonSchema = z
     middleName: clearableString(100).optional(),
     lastName: z.string().min(1).max(100).trim().optional(),
     birthDate: clearableDate.optional(),
-    birthDateQualifier: z.union([z.nativeEnum(DateQualifier), z.literal('')]).transform((v) => (v === '' ? undefined : v)).optional(),
+    birthDateQualifier: z
+      .union([z.nativeEnum(DateQualifier), z.literal('')])
+      .transform((v) => (v === '' ? undefined : v))
+      .optional(),
     birthPlace: clearableString(200).optional(),
     deathDate: clearableDate.optional(),
-    deathDateQualifier: z.union([z.nativeEnum(DateQualifier), z.literal('')]).transform((v) => (v === '' ? undefined : v)).optional(),
+    deathDateQualifier: z
+      .union([z.nativeEnum(DateQualifier), z.literal('')])
+      .transform((v) => (v === '' ? undefined : v))
+      .optional(),
     deathPlace: clearableString(200).optional(),
     burialPlace: clearableString(200).optional(),
     gender: z.nativeEnum(Gender).optional(),

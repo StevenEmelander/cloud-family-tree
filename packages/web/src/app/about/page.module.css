@@ -123,7 +123,7 @@
 }
 
 .faqQuestion::after {
-  content: '+';
+  content: "+";
   margin-left: auto;
   font-size: 1.375rem;
   font-weight: 300;
@@ -133,7 +133,7 @@
 }
 
 .faqItem[open] .faqQuestion::after {
-  content: '\2212';
+  content: "\2212";
   color: var(--color-primary);
 }
 

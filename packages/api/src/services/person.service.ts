@@ -1,3 +1,9 @@
+import type {
+  CreatePersonInput,
+  PaginatedResponse,
+  Person,
+  UpdatePersonInput,
+} from '@cloud-family-tree/shared';
 import {
   API_CONFIG,
   createPersonSchema,
@@ -5,19 +11,12 @@ import {
   updatePersonSchema,
   validate,
 } from '@cloud-family-tree/shared';
-import type {
-  CreatePersonInput,
-  Person,
-  PaginatedResponse,
-  UpdatePersonInput,
-} from '@cloud-family-tree/shared';
 import { v4 as uuid } from 'uuid';
 import { ConflictError, NotFoundError, ValidationError } from '../middleware/error-handler';
+import { ArtifactRepository } from '../repositories/artifact.repository';
 import { EntryRepository } from '../repositories/entry.repository';
 import { PersonRepository } from '../repositories/person.repository';
-import { ArtifactRepository } from '../repositories/artifact.repository';
 import { RelationshipRepository } from '../repositories/relationship.repository';
-
 
 export class PersonService {
   private readonly personRepo = new PersonRepository();
@@ -33,9 +32,7 @@ export class PersonService {
 
     // Check for duplicate (same firstName + lastName + birthDate)
     const nameMatches = await this.personRepo.findByExactName(data.firstName, data.lastName);
-    const duplicate = nameMatches.find(
-      (m) => (m.birthDate ?? null) === (data.birthDate ?? null),
-    );
+    const duplicate = nameMatches.find((m) => (m.birthDate ?? null) === (data.birthDate ?? null));
     if (duplicate) {
       throw new ConflictError(
         `${data.firstName} ${data.lastName}${data.birthDate ? ` (born ${data.birthDate})` : ''} already exists`,

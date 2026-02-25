@@ -1,8 +1,8 @@
 'use client';
 
-import { api } from '@/lib/api';
 import type { Person } from '@cloud-family-tree/shared';
 import { useEffect, useRef, useState } from 'react';
+import { api } from '@/lib/api';
 import styles from './add-relationship.module.css';
 
 interface AddRelationshipProps {
@@ -63,7 +63,7 @@ export default function AddRelationship({
   const [warning, setWarning] = useState<string | null>(null);
   const [pendingPerson, setPendingPerson] = useState<Person | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // New person form
   const [newFirst, setNewFirst] = useState('');
@@ -164,7 +164,8 @@ export default function AddRelationship({
     }
   }
 
-  const roleLabel = relationshipRole === 'parent' ? 'Parent' : relationshipRole === 'child' ? 'Child' : 'Spouse';
+  const roleLabel =
+    relationshipRole === 'parent' ? 'Parent' : relationshipRole === 'child' ? 'Child' : 'Spouse';
 
   return (
     <div className={styles.container}>
@@ -181,13 +182,21 @@ export default function AddRelationship({
         <div className={styles.warning}>
           <p>{warning}</p>
           <div className={styles.warningActions}>
-            <button type="button" className={styles.btnConfirm} onClick={confirmLink} disabled={linking}>
+            <button
+              type="button"
+              className={styles.btnConfirm}
+              onClick={confirmLink}
+              disabled={linking}
+            >
               Add Anyway
             </button>
             <button
               type="button"
               className={styles.btnCancelWarn}
-              onClick={() => { setWarning(null); setPendingPerson(null); }}
+              onClick={() => {
+                setWarning(null);
+                setPendingPerson(null);
+              }}
             >
               Cancel
             </button>
@@ -221,11 +230,10 @@ export default function AddRelationship({
                   disabled={linking}
                 >
                   <span className={styles.resultName}>
-                    {p.firstName} {p.middleName ? `${p.middleName} ` : ''}{p.lastName}
+                    {p.firstName} {p.middleName ? `${p.middleName} ` : ''}
+                    {p.lastName}
                   </span>
-                  {p.birthDate && (
-                    <span className={styles.resultDate}>b. {p.birthDate}</span>
-                  )}
+                  {p.birthDate && <span className={styles.resultDate}>b. {p.birthDate}</span>}
                 </button>
               ))}
             </div>

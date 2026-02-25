@@ -1,14 +1,19 @@
 'use client';
 
+import type {
+  Artifact,
+  Person,
+  Relationship,
+  RelationshipMetadata,
+} from '@cloud-family-tree/shared';
+import { ArtifactType } from '@cloud-family-tree/shared';
+import Link from 'next/link';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { FlexDateInput } from '@/components/FlexDateInput';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { canEditPeople } from '@/lib/auth-utils';
 import { formatLifespan } from '@/lib/date-utils';
-import { FlexDateInput } from '@/components/FlexDateInput';
-import { ArtifactType } from '@cloud-family-tree/shared';
-import type { Artifact, Person, Relationship, RelationshipMetadata } from '@cloud-family-tree/shared';
-import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './artifacts-tab.module.css';
 
 const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp';
@@ -50,8 +55,11 @@ const TYPE_BADGE_CLASS: Record<string, string> = {
 
 function formatSource(source: string): { text: string; href?: string } {
   if (source.startsWith('http')) {
-    try { return { text: new URL(source).hostname.replace(/^www\./, ''), href: source }; }
-    catch { return { text: source, href: source }; }
+    try {
+      return { text: new URL(source).hostname.replace(/^www\./, ''), href: source };
+    } catch {
+      return { text: source, href: source };
+    }
   }
   return { text: source };
 }
@@ -147,7 +155,9 @@ export default function ArtifactsTab({
 
   // Lightbox state
   const [lightboxArtifact, setLightboxArtifact] = useState<ArtifactWithUrl | null>(null);
-  const [lightboxAssociations, setLightboxAssociations] = useState<{ personId: string; name: string }[]>([]);
+  const [lightboxAssociations, setLightboxAssociations] = useState<
+    { personId: string; name: string }[]
+  >([]);
   const [lightboxAssocLoading, setLightboxAssocLoading] = useState(false);
   const lightboxArtifactRef = useRef<string | null>(null);
 
@@ -226,7 +236,9 @@ export default function ArtifactsTab({
   // Close lightbox on Escape
   useEffect(() => {
     if (!lightboxArtifact) return;
-    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') closeLightbox(); }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') closeLightbox();
+    }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [lightboxArtifact]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -266,13 +278,21 @@ export default function ArtifactsTab({
   }
 
   // Create a PersonEvidence entry for a person
-  function makeEvidence(id: string, name: string, relationship: string, isPrimary = false): PersonEvidence {
-    const info = id === personId ? {
-      birthDate: person.birthDate,
-      birthDateQualifier: person.birthDateQualifier,
-      deathDate: person.deathDate,
-      deathDateQualifier: person.deathDateQualifier,
-    } : relatedPeople[id];
+  function makeEvidence(
+    id: string,
+    name: string,
+    relationship: string,
+    isPrimary = false,
+  ): PersonEvidence {
+    const info =
+      id === personId
+        ? {
+            birthDate: person.birthDate,
+            birthDateQualifier: person.birthDateQualifier,
+            deathDate: person.deathDate,
+            deathDateQualifier: person.deathDateQualifier,
+          }
+        : relatedPeople[id];
     return {
       id,
       name,
@@ -348,8 +368,14 @@ export default function ArtifactsTab({
           if (info && (!year || isAliveAtYear(info, year))) {
             const ev = makeEvidence(spouseId, info.name, 'Spouse');
             if (year) {
-              if (!ev.birthDate) { ev.birthDate = String(year); ev.birthDateQualifier = 'BEF'; }
-              if (!ev.deathDate) { ev.deathDate = String(year); ev.deathDateQualifier = 'AFT'; }
+              if (!ev.birthDate) {
+                ev.birthDate = String(year);
+                ev.birthDateQualifier = 'BEF';
+              }
+              if (!ev.deathDate) {
+                ev.deathDate = String(year);
+                ev.deathDateQualifier = 'AFT';
+              }
             }
             people.set(spouseId, ev);
           }
@@ -358,12 +384,18 @@ export default function ArtifactsTab({
           const info = relatedPeople[r.person2Id];
           if (info) {
             const childBirthYear = parseYear(info.birthDate);
-            const isUnderage = year && childBirthYear ? (year - childBirthYear < 18) : true;
+            const isUnderage = year && childBirthYear ? year - childBirthYear < 18 : true;
             if (isUnderage && (!year || isAliveAtYear(info, year))) {
               const ev = makeEvidence(r.person2Id, info.name, 'Child');
               if (year) {
-                if (!ev.birthDate) { ev.birthDate = String(year); ev.birthDateQualifier = 'BEF'; }
-                if (!ev.deathDate) { ev.deathDate = String(year); ev.deathDateQualifier = 'AFT'; }
+                if (!ev.birthDate) {
+                  ev.birthDate = String(year);
+                  ev.birthDateQualifier = 'BEF';
+                }
+                if (!ev.deathDate) {
+                  ev.deathDate = String(year);
+                  ev.deathDateQualifier = 'AFT';
+                }
               }
               people.set(r.person2Id, ev);
             }
@@ -407,7 +439,10 @@ export default function ArtifactsTab({
     }
 
     // Pre-fill marriage/divorce fields from first spouse relationship
-    if (artifactType === ArtifactType.MARRIAGE_RECORD || artifactType === ArtifactType.DIVORCE_RECORD) {
+    if (
+      artifactType === ArtifactType.MARRIAGE_RECORD ||
+      artifactType === ArtifactType.DIVORCE_RECORD
+    ) {
       const spouses = getSpouseRelationships();
       if (spouses.length > 0) {
         const rel = spouses[0]!;
@@ -426,7 +461,10 @@ export default function ArtifactsTab({
   // For census/immigration: when date changes, rebuild suggestions
   function handleDateChange(newDate: string) {
     setRecordDate(newDate);
-    if (artifactType === ArtifactType.CENSUS_RECORD || artifactType === ArtifactType.IMMIGRATION_RECORD) {
+    if (
+      artifactType === ArtifactType.CENSUS_RECORD ||
+      artifactType === ArtifactType.IMMIGRATION_RECORD
+    ) {
       buildAndSetSuggestions(artifactType, newDate);
     }
   }
@@ -438,9 +476,11 @@ export default function ArtifactsTab({
     try {
       const result = await api.listPeople({ search: searchQuery.trim(), limit: 10 });
       // Filter out people already selected and the current person
-      setSearchResults(result.items.filter(
-        (p: Person) => p.personId !== personId && !selectedPeople.has(p.personId),
-      ));
+      setSearchResults(
+        result.items.filter(
+          (p: Person) => p.personId !== personId && !selectedPeople.has(p.personId),
+        ),
+      );
     } catch {
       setSearchResults([]);
     } finally {
@@ -478,8 +518,9 @@ export default function ArtifactsTab({
     const spouses = getSpouseRelationships();
 
     // For Census/Immigration: filter by alive at the selected date
-    const dateFiltered = artifactType === ArtifactType.CENSUS_RECORD
-      || artifactType === ArtifactType.IMMIGRATION_RECORD;
+    const dateFiltered =
+      artifactType === ArtifactType.CENSUS_RECORD ||
+      artifactType === ArtifactType.IMMIGRATION_RECORD;
     const filterYear = dateFiltered ? parseYear(recordDate) : null;
 
     const canAdd = (id: string) => {
@@ -492,14 +533,24 @@ export default function ArtifactsTab({
 
     // Parents, spouses, children
     for (const r of parents) {
-      if (canAdd(r.person1Id)) options.push({ id: r.person1Id, name: relatedPeople[r.person1Id]!.name, relationship: 'Parent' });
+      if (canAdd(r.person1Id))
+        options.push({
+          id: r.person1Id,
+          name: relatedPeople[r.person1Id]!.name,
+          relationship: 'Parent',
+        });
     }
     for (const r of spouses) {
       const id = getSpouseId(r);
       if (canAdd(id)) options.push({ id, name: relatedPeople[id]!.name, relationship: 'Spouse' });
     }
     for (const r of children) {
-      if (canAdd(r.person2Id)) options.push({ id: r.person2Id, name: relatedPeople[r.person2Id]!.name, relationship: 'Child' });
+      if (canAdd(r.person2Id))
+        options.push({
+          id: r.person2Id,
+          name: relatedPeople[r.person2Id]!.name,
+          relationship: 'Child',
+        });
     }
     return options;
   }
@@ -517,7 +568,8 @@ export default function ArtifactsTab({
       (r) => r.relationshipType === 'SPOUSE' && (r.person1Id === value || r.person2Id === value),
     );
     const isParent = relationships.some(
-      (r) => r.relationshipType === 'PARENT_CHILD' && r.person1Id === value && r.person2Id === personId,
+      (r) =>
+        r.relationshipType === 'PARENT_CHILD' && r.person1Id === value && r.person2Id === personId,
     );
     const rel = isSpouse ? 'Spouse' : isParent ? 'Parent' : 'Child';
     const ev = makeEvidence(value, info.name, rel);
@@ -660,7 +712,11 @@ export default function ArtifactsTab({
       // Step 4: Associate selected people (exclude primary — already associated)
       // For marriage/divorce, associate only the selected spouse
       const peopleToAssociate: string[] = [];
-      if ((artifactType === ArtifactType.MARRIAGE_RECORD || artifactType === ArtifactType.DIVORCE_RECORD) && selectedSpouseRelId) {
+      if (
+        (artifactType === ArtifactType.MARRIAGE_RECORD ||
+          artifactType === ArtifactType.DIVORCE_RECORD) &&
+        selectedSpouseRelId
+      ) {
         const rel = relationships.find((r) => r.relationshipId === selectedSpouseRelId);
         if (rel) {
           const spouseId = rel.person1Id === personId ? rel.person2Id : rel.person1Id;
@@ -684,7 +740,12 @@ export default function ArtifactsTab({
       for (const ev of selectedPeople.values()) {
         const updates: Record<string, unknown> = {};
         const orig = ev.isPrimary
-          ? { birthDate: person.birthDate, birthDateQualifier: person.birthDateQualifier, deathDate: person.deathDate, deathDateQualifier: person.deathDateQualifier }
+          ? {
+              birthDate: person.birthDate,
+              birthDateQualifier: person.birthDateQualifier,
+              deathDate: person.deathDate,
+              deathDateQualifier: person.deathDateQualifier,
+            }
           : relatedPeople[ev.id];
 
         // Check if birth date changed
@@ -737,7 +798,11 @@ export default function ArtifactsTab({
       }
 
       // Update marriage/divorce relationship
-      if ((artifactType === ArtifactType.MARRIAGE_RECORD || artifactType === ArtifactType.DIVORCE_RECORD) && selectedSpouseRelId) {
+      if (
+        (artifactType === ArtifactType.MARRIAGE_RECORD ||
+          artifactType === ArtifactType.DIVORCE_RECORD) &&
+        selectedSpouseRelId
+      ) {
         const relUpdates: Record<string, unknown> = {};
         if (artifactType === ArtifactType.MARRIAGE_RECORD) {
           if (marriageDate.trim()) relUpdates.marriageDate = marriageDate.trim();
@@ -836,13 +901,21 @@ export default function ArtifactsTab({
         } else if (info) {
           // Determine relationship label
           const isSpouse = relationships.some(
-            (r) => r.relationshipType === 'SPOUSE' && (r.person1Id === assoc.personId || r.person2Id === assoc.personId),
+            (r) =>
+              r.relationshipType === 'SPOUSE' &&
+              (r.person1Id === assoc.personId || r.person2Id === assoc.personId),
           );
           const isParent = relationships.some(
-            (r) => r.relationshipType === 'PARENT_CHILD' && r.person1Id === assoc.personId && r.person2Id === personId,
+            (r) =>
+              r.relationshipType === 'PARENT_CHILD' &&
+              r.person1Id === assoc.personId &&
+              r.person2Id === personId,
           );
           const isChild = relationships.some(
-            (r) => r.relationshipType === 'PARENT_CHILD' && r.person1Id === personId && r.person2Id === assoc.personId,
+            (r) =>
+              r.relationshipType === 'PARENT_CHILD' &&
+              r.person1Id === personId &&
+              r.person2Id === assoc.personId,
           );
           const rel = isSpouse ? 'Spouse' : isParent ? 'Parent' : isChild ? 'Child' : 'Added';
           people.set(assoc.personId, makeEvidence(assoc.personId, assoc.name, rel));
@@ -1008,7 +1081,10 @@ export default function ArtifactsTab({
       }
 
       // Marriage/Divorce relationship update
-      if ((type === ArtifactType.MARRIAGE_RECORD || type === ArtifactType.DIVORCE_RECORD) && selectedSpouseRelId) {
+      if (
+        (type === ArtifactType.MARRIAGE_RECORD || type === ArtifactType.DIVORCE_RECORD) &&
+        selectedSpouseRelId
+      ) {
         const relUpdates: Record<string, unknown> = {};
         if (type === ArtifactType.MARRIAGE_RECORD) {
           if (marriageDate.trim()) relUpdates.marriageDate = marriageDate.trim();
@@ -1026,7 +1102,9 @@ export default function ArtifactsTab({
       // Handle association changes
       const currentIds = new Set(selectedPeople.keys());
       // Add new associations
-      const toAdd = [...currentIds].filter((id) => id !== personId && !originalAssociations.has(id));
+      const toAdd = [...currentIds].filter(
+        (id) => id !== personId && !originalAssociations.has(id),
+      );
       if (toAdd.length > 0) {
         await api.associateArtifact(editingArtifact.artifactId, {
           sourcePersonId: personId,
@@ -1034,7 +1112,9 @@ export default function ArtifactsTab({
         });
       }
       // Remove old associations
-      const toRemove = [...originalAssociations].filter((id) => id !== personId && !currentIds.has(id));
+      const toRemove = [...originalAssociations].filter(
+        (id) => id !== personId && !currentIds.has(id),
+      );
       for (const id of toRemove) {
         await api.disassociateArtifact(editingArtifact.artifactId, id);
       }
@@ -1077,9 +1157,16 @@ export default function ArtifactsTab({
       {canEdit && (
         <div className={styles.uploadSection}>
           <div className={styles.uploadTitleRow}>
-            <h3 className={styles.uploadTitle}>{editingArtifact ? 'Edit Artifact' : 'Upload Artifact'}</h3>
+            <h3 className={styles.uploadTitle}>
+              {editingArtifact ? 'Edit Artifact' : 'Upload Artifact'}
+            </h3>
             {editingArtifact && (
-              <button type="button" className={styles.btnCancel} onClick={cancelEditing} disabled={editSaving}>
+              <button
+                type="button"
+                className={styles.btnCancel}
+                onClick={cancelEditing}
+                disabled={editSaving}
+              >
                 Cancel
               </button>
             )}
@@ -1120,7 +1207,12 @@ export default function ArtifactsTab({
                         ? `${(selectedFile.size / 1024).toFixed(0)} KB`
                         : `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB`}
                     </span>
-                    <button type="button" className={styles.filePreviewRemove} onClick={clearFile} disabled={uploading}>
+                    <button
+                      type="button"
+                      className={styles.filePreviewRemove}
+                      onClick={clearFile}
+                      disabled={uploading}
+                    >
                       Change file
                     </button>
                   </div>
@@ -1256,7 +1348,11 @@ export default function ArtifactsTab({
                   </label>
                   <label className={styles.fieldLabel}>
                     Marriage Date
-                    <FlexDateInput value={marriageDate} onChange={(v) => setMarriageDate(v)} disabled={uploading} />
+                    <FlexDateInput
+                      value={marriageDate}
+                      onChange={(v) => setMarriageDate(v)}
+                      disabled={uploading}
+                    />
                   </label>
                   <label className={styles.fieldLabel}>
                     Marriage Place
@@ -1294,7 +1390,11 @@ export default function ArtifactsTab({
                   </label>
                   <label className={styles.fieldLabel}>
                     Divorce Date
-                    <FlexDateInput value={divorceDate} onChange={(v) => setDivorceDate(v)} disabled={uploading} />
+                    <FlexDateInput
+                      value={divorceDate}
+                      onChange={(v) => setDivorceDate(v)}
+                      disabled={uploading}
+                    />
                   </label>
                   <label className={styles.fieldLabel}>
                     Divorce Place
@@ -1314,7 +1414,11 @@ export default function ArtifactsTab({
                 <div className={styles.typeFields}>
                   <label className={styles.fieldLabel}>
                     Date
-                    <FlexDateInput value={recordDate} onChange={handleDateChange} disabled={uploading} />
+                    <FlexDateInput
+                      value={recordDate}
+                      onChange={handleDateChange}
+                      disabled={uploading}
+                    />
                   </label>
                   <label className={styles.fieldLabel}>
                     District / Location
@@ -1334,7 +1438,11 @@ export default function ArtifactsTab({
                 <div className={styles.typeFields}>
                   <label className={styles.fieldLabel}>
                     Date
-                    <FlexDateInput value={recordDate} onChange={handleDateChange} disabled={uploading} />
+                    <FlexDateInput
+                      value={recordDate}
+                      onChange={handleDateChange}
+                      disabled={uploading}
+                    />
                   </label>
                   <label className={styles.fieldLabel}>
                     Ship Name
@@ -1362,10 +1470,15 @@ export default function ArtifactsTab({
               )}
 
               {/* Generic date for BIRTH_RECORD and DEATH_RECORD */}
-              {(artifactType === ArtifactType.BIRTH_RECORD || artifactType === ArtifactType.DEATH_RECORD) && (
+              {(artifactType === ArtifactType.BIRTH_RECORD ||
+                artifactType === ArtifactType.DEATH_RECORD) && (
                 <label className={styles.fieldLabel}>
                   Date
-                  <FlexDateInput value={recordDate} onChange={(v) => setRecordDate(v)} disabled={uploading} />
+                  <FlexDateInput
+                    value={recordDate}
+                    onChange={(v) => setRecordDate(v)}
+                    disabled={uploading}
+                  />
                 </label>
               )}
 
@@ -1396,154 +1509,169 @@ export default function ArtifactsTab({
               )}
 
               {/* People Association Section */}
-              {artifactType !== ArtifactType.BIRTH_RECORD && artifactType !== ArtifactType.DEATH_RECORD && artifactType !== ArtifactType.MARRIAGE_RECORD && artifactType !== ArtifactType.DIVORCE_RECORD
-                && !((artifactType === ArtifactType.CENSUS_RECORD || artifactType === ArtifactType.IMMIGRATION_RECORD) && !recordDate) && (
-                <div className={styles.associationSection}>
-                  <span className={styles.associationTitle}>Associated People</span>
+              {artifactType !== ArtifactType.BIRTH_RECORD &&
+                artifactType !== ArtifactType.DEATH_RECORD &&
+                artifactType !== ArtifactType.MARRIAGE_RECORD &&
+                artifactType !== ArtifactType.DIVORCE_RECORD &&
+                !(
+                  (artifactType === ArtifactType.CENSUS_RECORD ||
+                    artifactType === ArtifactType.IMMIGRATION_RECORD) &&
+                  !recordDate
+                ) && (
+                  <div className={styles.associationSection}>
+                    <span className={styles.associationTitle}>Associated People</span>
 
-                  <div className={styles.personList}>
-                    {Array.from(selectedPeople.values()).map((ev) => (
-                      <div key={ev.id} className={styles.personCard}>
-                        <div className={styles.personHeader}>
-                          <div className={styles.personInfo}>
-                            <span className={styles.personName}>{ev.name}</span>
-                            <span className={styles.personLifespan}>
-                              {formatLifespan(ev.birthDate, ev.deathDate)}
-                            </span>
-                          </div>
-                          <div className={styles.personActions}>
-                            <span className={styles.personRelLabel}>{ev.relationship}</span>
-                            {!ev.isPrimary && (
-                              <button
-                                type="button"
-                                className={styles.personRemove}
-                                onClick={() => removePerson(ev.id)}
-                                title="Remove"
-                              >
-                                &times;
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        {artifactType === ArtifactType.GRAVE && (
-                          <div className={styles.personDates}>
-                            <label className={styles.fieldLabel}>
-                              Birth
-                              <div className={styles.dateRow}>
-                                <select
-                                  className={styles.selectInput}
-                                  value={ev.birthDateQualifier}
-                                  onChange={(e) => updateEvidence(ev.id, 'birthDateQualifier', e.target.value)}
-                                  disabled={uploading}
-                                >
-                                  <option value="">Exact</option>
-                                  <option value="ABT">About</option>
-                                  <option value="BEF">Before</option>
-                                  <option value="AFT">After</option>
-                                </select>
-                                <input
-                                  type="text"
-                                  className={styles.textInput}
-                                  placeholder="YYYY or YYYY-MM-DD"
-                                  value={ev.birthDate}
-                                  onChange={(e) => updateEvidence(ev.id, 'birthDate', e.target.value)}
-                                  disabled={uploading}
-                                />
-                              </div>
-                            </label>
-                            <label className={styles.fieldLabel}>
-                              Death
-                              <div className={styles.dateRow}>
-                                <select
-                                  className={styles.selectInput}
-                                  value={ev.deathDateQualifier}
-                                  onChange={(e) => updateEvidence(ev.id, 'deathDateQualifier', e.target.value)}
-                                  disabled={uploading}
-                                >
-                                  <option value="">Exact</option>
-                                  <option value="ABT">About</option>
-                                  <option value="BEF">Before</option>
-                                  <option value="AFT">After</option>
-                                </select>
-                                <input
-                                  type="text"
-                                  className={styles.textInput}
-                                  placeholder="YYYY or YYYY-MM-DD"
-                                  value={ev.deathDate}
-                                  onChange={(e) => updateEvidence(ev.id, 'deathDate', e.target.value)}
-                                  disabled={uploading}
-                                />
-                              </div>
-                            </label>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Dropdown to add people */}
-                  {(() => {
-                    const opts = getDropdownOptions();
-                    return (
-                      <>
-                        <select
-                          className={styles.selectInput}
-                          value=""
-                          onChange={(e) => handleDropdownAdd(e.target.value)}
-                          disabled={uploading}
-                        >
-                          <option value="">Add a person...</option>
-                          {opts.map((o) => (
-                            <option key={o.id} value={o.id}>
-                              {o.name} ({o.relationship})
-                            </option>
-                          ))}
-                          <option value="__other__">Other (search)...</option>
-                        </select>
-
-                        {showOtherSearch && (
-                          <>
-                            <div className={styles.searchRow}>
-                              <input
-                                type="text"
-                                className={styles.textInput}
-                                placeholder="Search by name..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                disabled={uploading}
-                              />
-                              <button
-                                type="button"
-                                className={styles.btnSearch}
-                                onClick={handleSearch}
-                                disabled={uploading || searching}
-                              >
-                                {searching ? '...' : 'Search'}
-                              </button>
+                    <div className={styles.personList}>
+                      {Array.from(selectedPeople.values()).map((ev) => (
+                        <div key={ev.id} className={styles.personCard}>
+                          <div className={styles.personHeader}>
+                            <div className={styles.personInfo}>
+                              <span className={styles.personName}>{ev.name}</span>
+                              <span className={styles.personLifespan}>
+                                {formatLifespan(ev.birthDate, ev.deathDate)}
+                              </span>
                             </div>
-                            {searchResults.length > 0 && (
-                              <div className={styles.searchResults}>
-                                {searchResults.map((p) => (
-                                  <button
-                                    key={p.personId}
-                                    type="button"
-                                    className={styles.searchResultItem}
-                                    onClick={() => addPersonFromSearch(p)}
+                            <div className={styles.personActions}>
+                              <span className={styles.personRelLabel}>{ev.relationship}</span>
+                              {!ev.isPrimary && (
+                                <button
+                                  type="button"
+                                  className={styles.personRemove}
+                                  onClick={() => removePerson(ev.id)}
+                                  title="Remove"
+                                >
+                                  &times;
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          {artifactType === ArtifactType.GRAVE && (
+                            <div className={styles.personDates}>
+                              <label className={styles.fieldLabel}>
+                                Birth
+                                <div className={styles.dateRow}>
+                                  <select
+                                    className={styles.selectInput}
+                                    value={ev.birthDateQualifier}
+                                    onChange={(e) =>
+                                      updateEvidence(ev.id, 'birthDateQualifier', e.target.value)
+                                    }
+                                    disabled={uploading}
                                   >
-                                    {p.firstName} {p.lastName}
-                                    {p.birthDate ? ` (${p.birthDate})` : ''}
-                                  </button>
-                                ))}
+                                    <option value="">Exact</option>
+                                    <option value="ABT">About</option>
+                                    <option value="BEF">Before</option>
+                                    <option value="AFT">After</option>
+                                  </select>
+                                  <input
+                                    type="text"
+                                    className={styles.textInput}
+                                    placeholder="YYYY or YYYY-MM-DD"
+                                    value={ev.birthDate}
+                                    onChange={(e) =>
+                                      updateEvidence(ev.id, 'birthDate', e.target.value)
+                                    }
+                                    disabled={uploading}
+                                  />
+                                </div>
+                              </label>
+                              <label className={styles.fieldLabel}>
+                                Death
+                                <div className={styles.dateRow}>
+                                  <select
+                                    className={styles.selectInput}
+                                    value={ev.deathDateQualifier}
+                                    onChange={(e) =>
+                                      updateEvidence(ev.id, 'deathDateQualifier', e.target.value)
+                                    }
+                                    disabled={uploading}
+                                  >
+                                    <option value="">Exact</option>
+                                    <option value="ABT">About</option>
+                                    <option value="BEF">Before</option>
+                                    <option value="AFT">After</option>
+                                  </select>
+                                  <input
+                                    type="text"
+                                    className={styles.textInput}
+                                    placeholder="YYYY or YYYY-MM-DD"
+                                    value={ev.deathDate}
+                                    onChange={(e) =>
+                                      updateEvidence(ev.id, 'deathDate', e.target.value)
+                                    }
+                                    disabled={uploading}
+                                  />
+                                </div>
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Dropdown to add people */}
+                    {(() => {
+                      const opts = getDropdownOptions();
+                      return (
+                        <>
+                          <select
+                            className={styles.selectInput}
+                            value=""
+                            onChange={(e) => handleDropdownAdd(e.target.value)}
+                            disabled={uploading}
+                          >
+                            <option value="">Add a person...</option>
+                            {opts.map((o) => (
+                              <option key={o.id} value={o.id}>
+                                {o.name} ({o.relationship})
+                              </option>
+                            ))}
+                            <option value="__other__">Other (search)...</option>
+                          </select>
+
+                          {showOtherSearch && (
+                            <>
+                              <div className={styles.searchRow}>
+                                <input
+                                  type="text"
+                                  className={styles.textInput}
+                                  placeholder="Search by name..."
+                                  value={searchQuery}
+                                  onChange={(e) => setSearchQuery(e.target.value)}
+                                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                  disabled={uploading}
+                                />
+                                <button
+                                  type="button"
+                                  className={styles.btnSearch}
+                                  onClick={handleSearch}
+                                  disabled={uploading || searching}
+                                >
+                                  {searching ? '...' : 'Search'}
+                                </button>
                               </div>
-                            )}
-                          </>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-              )}
+                              {searchResults.length > 0 && (
+                                <div className={styles.searchResults}>
+                                  {searchResults.map((p) => (
+                                    <button
+                                      key={p.personId}
+                                      type="button"
+                                      className={styles.searchResultItem}
+                                      onClick={() => addPersonFromSearch(p)}
+                                    >
+                                      {p.firstName} {p.lastName}
+                                      {p.birthDate ? ` (${p.birthDate})` : ''}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
 
               {editingArtifact ? (
                 <button
@@ -1572,12 +1700,14 @@ export default function ArtifactsTab({
       {/* Filter tabs */}
       {artifacts.length > 0 && (
         <div className={styles.filterTabs}>
-          {([
-            ['all', 'All'],
-            ['graves', 'Grave'],
-            ['records', 'Records'],
-            ['photos', 'Photos'],
-          ] as const).map(([key, label]) => (
+          {(
+            [
+              ['all', 'All'],
+              ['graves', 'Grave'],
+              ['records', 'Records'],
+              ['photos', 'Photos'],
+            ] as const
+          ).map(([key, label]) => (
             <button
               key={key}
               type="button"
@@ -1612,7 +1742,9 @@ export default function ArtifactsTab({
                   }}
                 >
                   <span className={styles.pdfIcon}>PDF</span>
-                  <span className={styles.pdfLabel}>{TYPE_LABELS[artifact.artifactType] || 'Document'}</span>
+                  <span className={styles.pdfLabel}>
+                    {TYPE_LABELS[artifact.artifactType] || 'Document'}
+                  </span>
                 </div>
               ) : artifact.viewUrl ? (
                 <img
@@ -1627,23 +1759,37 @@ export default function ArtifactsTab({
                 <div className={styles.imagePlaceholder}>Unable to load</div>
               )}
               <div className={styles.cardInfo}>
-                <span className={`${styles.typeBadge} ${styles[TYPE_BADGE_CLASS[artifact.artifactType] || 'badgeOther']}`}>
+                <span
+                  className={`${styles.typeBadge} ${styles[TYPE_BADGE_CLASS[artifact.artifactType] || 'badgeOther']}`}
+                >
                   {TYPE_LABELS[artifact.artifactType] || artifact.artifactType}
                 </span>
                 {artifact.caption && <p className={styles.caption}>{artifact.caption}</p>}
-                {artifact.metadata?.censusLocation && <p className={styles.date}>Location: {artifact.metadata.censusLocation}</p>}
-                {artifact.metadata?.shipName && <p className={styles.date}>Ship: {artifact.metadata.shipName}</p>}
-                {artifact.metadata?.portOfArrival && <p className={styles.date}>Port: {artifact.metadata.portOfArrival}</p>}
-                {artifact.source && (() => {
-                  const { text, href } = formatSource(artifact.source!);
-                  return (
-                    <p className={styles.source}>
-                      Source: {href ? (
-                        <a href={href} target="_blank" rel="noopener noreferrer">{text}</a>
-                      ) : text}
-                    </p>
-                  );
-                })()}
+                {artifact.metadata?.censusLocation && (
+                  <p className={styles.date}>Location: {artifact.metadata.censusLocation}</p>
+                )}
+                {artifact.metadata?.shipName && (
+                  <p className={styles.date}>Ship: {artifact.metadata.shipName}</p>
+                )}
+                {artifact.metadata?.portOfArrival && (
+                  <p className={styles.date}>Port: {artifact.metadata.portOfArrival}</p>
+                )}
+                {artifact.source &&
+                  (() => {
+                    const { text, href } = formatSource(artifact.source!);
+                    return (
+                      <p className={styles.source}>
+                        Source:{' '}
+                        {href ? (
+                          <a href={href} target="_blank" rel="noopener noreferrer">
+                            {text}
+                          </a>
+                        ) : (
+                          text
+                        )}
+                      </p>
+                    );
+                  })()}
                 {artifact.date && <p className={styles.date}>Date: {artifact.date}</p>}
                 {artifact.isPrimary && <span className={styles.primaryBadge}>Profile Photo</span>}
                 <div className={styles.cardActions}>
@@ -1660,7 +1806,9 @@ export default function ArtifactsTab({
                         a.download = artifact.fileName;
                         a.click();
                         URL.revokeObjectURL(a.href);
-                      } catch { /* ignore */ }
+                      } catch {
+                        /* ignore */
+                      }
                     }}
                   >
                     Download
@@ -1691,204 +1839,246 @@ export default function ArtifactsTab({
       )}
 
       {/* Lightbox overlay */}
-      {lightboxArtifact && lightboxArtifact.viewUrl && (() => {
-        const lbType = lightboxArtifact.artifactType as ArtifactType;
-        const lbSource = lightboxArtifact.source ? formatSource(lightboxArtifact.source) : null;
+      {lightboxArtifact &&
+        lightboxArtifact.viewUrl &&
+        (() => {
+          const lbType = lightboxArtifact.artifactType as ArtifactType;
+          const lbSource = lightboxArtifact.source ? formatSource(lightboxArtifact.source) : null;
 
-        // Find marriage/divorce metadata from relationships
-        let spouseRelMeta: RelationshipMetadata | undefined;
-        if (lbType === ArtifactType.MARRIAGE_RECORD || lbType === ArtifactType.DIVORCE_RECORD) {
-          const spouseAssoc = lightboxAssociations.find((a) => a.personId !== personId);
-          if (spouseAssoc) {
-            const rel = relationships.find(
-              (r) => r.relationshipType === 'SPOUSE'
-                && (r.person1Id === spouseAssoc.personId || r.person2Id === spouseAssoc.personId),
-            );
-            spouseRelMeta = rel?.metadata;
+          // Find marriage/divorce metadata from relationships
+          let spouseRelMeta: RelationshipMetadata | undefined;
+          if (lbType === ArtifactType.MARRIAGE_RECORD || lbType === ArtifactType.DIVORCE_RECORD) {
+            const spouseAssoc = lightboxAssociations.find((a) => a.personId !== personId);
+            if (spouseAssoc) {
+              const rel = relationships.find(
+                (r) =>
+                  r.relationshipType === 'SPOUSE' &&
+                  (r.person1Id === spouseAssoc.personId || r.person2Id === spouseAssoc.personId),
+              );
+              spouseRelMeta = rel?.metadata;
+            }
           }
-        }
 
-        return (
-          <div className={styles.lightboxOverlay} onClick={closeLightbox}>
-            <div className={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
-              <button type="button" className={styles.lightboxClose} onClick={closeLightbox}>&times;</button>
+          return (
+            <div className={styles.lightboxOverlay} onClick={closeLightbox}>
+              <div className={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
+                <button type="button" className={styles.lightboxClose} onClick={closeLightbox}>
+                  &times;
+                </button>
 
-              <div className={styles.lightboxImageContainer}>
-                <img
-                  src={lightboxArtifact.viewUrl}
-                  alt={lightboxArtifact.caption || lightboxArtifact.fileName}
-                  className={styles.lightboxImage}
-                />
-              </div>
+                <div className={styles.lightboxImageContainer}>
+                  <img
+                    src={lightboxArtifact.viewUrl}
+                    alt={lightboxArtifact.caption || lightboxArtifact.fileName}
+                    className={styles.lightboxImage}
+                  />
+                </div>
 
-              <div className={styles.lightboxDetails}>
-                {/* Type badge */}
-                <span className={`${styles.typeBadge} ${styles[TYPE_BADGE_CLASS[lightboxArtifact.artifactType] || 'badgeOther']}`}>
-                  {TYPE_LABELS[lightboxArtifact.artifactType] || lightboxArtifact.artifactType}
-                </span>
-
-                {/* Caption / Inscription */}
-                {lightboxArtifact.caption && (
-                  <div className={styles.lightboxDetailRow}>
-                    <span className={styles.lightboxDetailLabel}>
-                      {lbType === ArtifactType.GRAVE ? 'Inscription' : 'Caption'}
-                    </span>
-                    <p className={styles.lightboxDetailValue}>{lightboxArtifact.caption}</p>
-                  </div>
-                )}
-
-                {/* Source */}
-                {lbSource && (
-                  <div className={styles.lightboxDetailRow}>
-                    <span className={styles.lightboxDetailLabel}>Source</span>
-                    <p className={styles.lightboxDetailValue}>
-                      {lbSource.href ? (
-                        <a href={lbSource.href} target="_blank" rel="noopener noreferrer">{lbSource.text}</a>
-                      ) : lbSource.text}
-                    </p>
-                  </div>
-                )}
-
-                {/* Date */}
-                {lightboxArtifact.date && (
-                  <div className={styles.lightboxDetailRow}>
-                    <span className={styles.lightboxDetailLabel}>Date</span>
-                    <p className={styles.lightboxDetailValue}>{lightboxArtifact.date}</p>
-                  </div>
-                )}
-
-                {/* Type-specific metadata */}
-                {lbType === ArtifactType.GRAVE && person.burialPlace && (
-                  <div className={styles.lightboxDetailRow}>
-                    <span className={styles.lightboxDetailLabel}>Cemetery / Location</span>
-                    <p className={styles.lightboxDetailValue}>{person.burialPlace}</p>
-                  </div>
-                )}
-                {lbType === ArtifactType.BIRTH_RECORD && person.birthPlace && (
-                  <div className={styles.lightboxDetailRow}>
-                    <span className={styles.lightboxDetailLabel}>Birth Place</span>
-                    <p className={styles.lightboxDetailValue}>{person.birthPlace}</p>
-                  </div>
-                )}
-                {lbType === ArtifactType.DEATH_RECORD && person.deathPlace && (
-                  <div className={styles.lightboxDetailRow}>
-                    <span className={styles.lightboxDetailLabel}>Death Place</span>
-                    <p className={styles.lightboxDetailValue}>{person.deathPlace}</p>
-                  </div>
-                )}
-                {lbType === ArtifactType.CENSUS_RECORD && lightboxArtifact.metadata?.censusLocation && (
-                  <div className={styles.lightboxDetailRow}>
-                    <span className={styles.lightboxDetailLabel}>Location</span>
-                    <p className={styles.lightboxDetailValue}>{lightboxArtifact.metadata.censusLocation}</p>
-                  </div>
-                )}
-                {lbType === ArtifactType.IMMIGRATION_RECORD && lightboxArtifact.metadata?.shipName && (
-                  <div className={styles.lightboxDetailRow}>
-                    <span className={styles.lightboxDetailLabel}>Ship</span>
-                    <p className={styles.lightboxDetailValue}>{lightboxArtifact.metadata.shipName}</p>
-                  </div>
-                )}
-                {lbType === ArtifactType.IMMIGRATION_RECORD && lightboxArtifact.metadata?.portOfArrival && (
-                  <div className={styles.lightboxDetailRow}>
-                    <span className={styles.lightboxDetailLabel}>Port of Arrival</span>
-                    <p className={styles.lightboxDetailValue}>{lightboxArtifact.metadata.portOfArrival}</p>
-                  </div>
-                )}
-                {lbType === ArtifactType.MARRIAGE_RECORD && spouseRelMeta && (
-                  <>
-                    {spouseRelMeta.marriageDate && (
-                      <div className={styles.lightboxDetailRow}>
-                        <span className={styles.lightboxDetailLabel}>Marriage Date</span>
-                        <p className={styles.lightboxDetailValue}>{spouseRelMeta.marriageDate}</p>
-                      </div>
-                    )}
-                    {spouseRelMeta.marriagePlace && (
-                      <div className={styles.lightboxDetailRow}>
-                        <span className={styles.lightboxDetailLabel}>Marriage Place</span>
-                        <p className={styles.lightboxDetailValue}>{spouseRelMeta.marriagePlace}</p>
-                      </div>
-                    )}
-                  </>
-                )}
-                {lbType === ArtifactType.DIVORCE_RECORD && spouseRelMeta && (
-                  <>
-                    {spouseRelMeta.divorceDate && (
-                      <div className={styles.lightboxDetailRow}>
-                        <span className={styles.lightboxDetailLabel}>Divorce Date</span>
-                        <p className={styles.lightboxDetailValue}>{spouseRelMeta.divorceDate}</p>
-                      </div>
-                    )}
-                    {spouseRelMeta.divorcePlace && (
-                      <div className={styles.lightboxDetailRow}>
-                        <span className={styles.lightboxDetailLabel}>Divorce Place</span>
-                        <p className={styles.lightboxDetailValue}>{spouseRelMeta.divorcePlace}</p>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* Profile photo badge */}
-                {lightboxArtifact.isPrimary && <span className={styles.lightboxPrimaryBadge}>Profile Photo</span>}
-
-                {/* Associated people */}
-                {(lightboxAssocLoading || lightboxAssociations.length > 0) && (
-                  <div className={styles.lightboxPeopleSection}>
-                    <span className={styles.lightboxDetailLabel}>People</span>
-                    {lightboxAssocLoading ? (
-                      <span className={styles.lightboxLoading}>Loading...</span>
-                    ) : (
-                      lightboxAssociations.map((assoc) => {
-                        const isGrave = lbType === ArtifactType.GRAVE;
-                        const pInfo = assoc.personId === personId
-                          ? { birthDate: person.birthDate, deathDate: person.deathDate }
-                          : relatedPeople[assoc.personId];
-                        const lifespan = pInfo ? formatLifespan(pInfo.birthDate, pInfo.deathDate) : '';
-                        return (
-                          <Link key={assoc.personId} href={`/people/${assoc.personId}`} className={styles.lightboxPersonLink} onClick={closeLightbox}>
-                            <span>{assoc.name}</span>
-                            {(isGrave || lifespan) && <span className={styles.lightboxPersonLifespan}>{lifespan}</span>}
-                          </Link>
-                        );
-                      })
-                    )}
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className={styles.lightboxActions}>
-                  <button
-                    type="button"
-                    className={styles.btnDownload}
-                    onClick={async () => {
-                      try {
-                        const { url } = await api.getArtifactUrl(lightboxArtifact.artifactId, personId);
-                        const res = await fetch(url);
-                        const blob = await res.blob();
-                        const a = document.createElement('a');
-                        a.href = URL.createObjectURL(blob);
-                        a.download = lightboxArtifact.fileName;
-                        a.click();
-                        URL.revokeObjectURL(a.href);
-                      } catch { /* ignore */ }
-                    }}
+                <div className={styles.lightboxDetails}>
+                  {/* Type badge */}
+                  <span
+                    className={`${styles.typeBadge} ${styles[TYPE_BADGE_CLASS[lightboxArtifact.artifactType] || 'badgeOther']}`}
                   >
-                    Download
-                  </button>
-                  {canEdit && (
+                    {TYPE_LABELS[lightboxArtifact.artifactType] || lightboxArtifact.artifactType}
+                  </span>
+
+                  {/* Caption / Inscription */}
+                  {lightboxArtifact.caption && (
+                    <div className={styles.lightboxDetailRow}>
+                      <span className={styles.lightboxDetailLabel}>
+                        {lbType === ArtifactType.GRAVE ? 'Inscription' : 'Caption'}
+                      </span>
+                      <p className={styles.lightboxDetailValue}>{lightboxArtifact.caption}</p>
+                    </div>
+                  )}
+
+                  {/* Source */}
+                  {lbSource && (
+                    <div className={styles.lightboxDetailRow}>
+                      <span className={styles.lightboxDetailLabel}>Source</span>
+                      <p className={styles.lightboxDetailValue}>
+                        {lbSource.href ? (
+                          <a href={lbSource.href} target="_blank" rel="noopener noreferrer">
+                            {lbSource.text}
+                          </a>
+                        ) : (
+                          lbSource.text
+                        )}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Date */}
+                  {lightboxArtifact.date && (
+                    <div className={styles.lightboxDetailRow}>
+                      <span className={styles.lightboxDetailLabel}>Date</span>
+                      <p className={styles.lightboxDetailValue}>{lightboxArtifact.date}</p>
+                    </div>
+                  )}
+
+                  {/* Type-specific metadata */}
+                  {lbType === ArtifactType.GRAVE && person.burialPlace && (
+                    <div className={styles.lightboxDetailRow}>
+                      <span className={styles.lightboxDetailLabel}>Cemetery / Location</span>
+                      <p className={styles.lightboxDetailValue}>{person.burialPlace}</p>
+                    </div>
+                  )}
+                  {lbType === ArtifactType.BIRTH_RECORD && person.birthPlace && (
+                    <div className={styles.lightboxDetailRow}>
+                      <span className={styles.lightboxDetailLabel}>Birth Place</span>
+                      <p className={styles.lightboxDetailValue}>{person.birthPlace}</p>
+                    </div>
+                  )}
+                  {lbType === ArtifactType.DEATH_RECORD && person.deathPlace && (
+                    <div className={styles.lightboxDetailRow}>
+                      <span className={styles.lightboxDetailLabel}>Death Place</span>
+                      <p className={styles.lightboxDetailValue}>{person.deathPlace}</p>
+                    </div>
+                  )}
+                  {lbType === ArtifactType.CENSUS_RECORD &&
+                    lightboxArtifact.metadata?.censusLocation && (
+                      <div className={styles.lightboxDetailRow}>
+                        <span className={styles.lightboxDetailLabel}>Location</span>
+                        <p className={styles.lightboxDetailValue}>
+                          {lightboxArtifact.metadata.censusLocation}
+                        </p>
+                      </div>
+                    )}
+                  {lbType === ArtifactType.IMMIGRATION_RECORD &&
+                    lightboxArtifact.metadata?.shipName && (
+                      <div className={styles.lightboxDetailRow}>
+                        <span className={styles.lightboxDetailLabel}>Ship</span>
+                        <p className={styles.lightboxDetailValue}>
+                          {lightboxArtifact.metadata.shipName}
+                        </p>
+                      </div>
+                    )}
+                  {lbType === ArtifactType.IMMIGRATION_RECORD &&
+                    lightboxArtifact.metadata?.portOfArrival && (
+                      <div className={styles.lightboxDetailRow}>
+                        <span className={styles.lightboxDetailLabel}>Port of Arrival</span>
+                        <p className={styles.lightboxDetailValue}>
+                          {lightboxArtifact.metadata.portOfArrival}
+                        </p>
+                      </div>
+                    )}
+                  {lbType === ArtifactType.MARRIAGE_RECORD && spouseRelMeta && (
+                    <>
+                      {spouseRelMeta.marriageDate && (
+                        <div className={styles.lightboxDetailRow}>
+                          <span className={styles.lightboxDetailLabel}>Marriage Date</span>
+                          <p className={styles.lightboxDetailValue}>{spouseRelMeta.marriageDate}</p>
+                        </div>
+                      )}
+                      {spouseRelMeta.marriagePlace && (
+                        <div className={styles.lightboxDetailRow}>
+                          <span className={styles.lightboxDetailLabel}>Marriage Place</span>
+                          <p className={styles.lightboxDetailValue}>
+                            {spouseRelMeta.marriagePlace}
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {lbType === ArtifactType.DIVORCE_RECORD && spouseRelMeta && (
+                    <>
+                      {spouseRelMeta.divorceDate && (
+                        <div className={styles.lightboxDetailRow}>
+                          <span className={styles.lightboxDetailLabel}>Divorce Date</span>
+                          <p className={styles.lightboxDetailValue}>{spouseRelMeta.divorceDate}</p>
+                        </div>
+                      )}
+                      {spouseRelMeta.divorcePlace && (
+                        <div className={styles.lightboxDetailRow}>
+                          <span className={styles.lightboxDetailLabel}>Divorce Place</span>
+                          <p className={styles.lightboxDetailValue}>{spouseRelMeta.divorcePlace}</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Profile photo badge */}
+                  {lightboxArtifact.isPrimary && (
+                    <span className={styles.lightboxPrimaryBadge}>Profile Photo</span>
+                  )}
+
+                  {/* Associated people */}
+                  {(lightboxAssocLoading || lightboxAssociations.length > 0) && (
+                    <div className={styles.lightboxPeopleSection}>
+                      <span className={styles.lightboxDetailLabel}>People</span>
+                      {lightboxAssocLoading ? (
+                        <span className={styles.lightboxLoading}>Loading...</span>
+                      ) : (
+                        lightboxAssociations.map((assoc) => {
+                          const isGrave = lbType === ArtifactType.GRAVE;
+                          const pInfo =
+                            assoc.personId === personId
+                              ? { birthDate: person.birthDate, deathDate: person.deathDate }
+                              : relatedPeople[assoc.personId];
+                          const lifespan = pInfo
+                            ? formatLifespan(pInfo.birthDate, pInfo.deathDate)
+                            : '';
+                          return (
+                            <Link
+                              key={assoc.personId}
+                              href={`/people/${assoc.personId}`}
+                              className={styles.lightboxPersonLink}
+                              onClick={closeLightbox}
+                            >
+                              <span>{assoc.name}</span>
+                              {(isGrave || lifespan) && (
+                                <span className={styles.lightboxPersonLifespan}>{lifespan}</span>
+                              )}
+                            </Link>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className={styles.lightboxActions}>
                     <button
                       type="button"
-                      className={styles.btnEdit}
-                      onClick={() => { startEditing(lightboxArtifact); closeLightbox(); }}
+                      className={styles.btnDownload}
+                      onClick={async () => {
+                        try {
+                          const { url } = await api.getArtifactUrl(
+                            lightboxArtifact.artifactId,
+                            personId,
+                          );
+                          const res = await fetch(url);
+                          const blob = await res.blob();
+                          const a = document.createElement('a');
+                          a.href = URL.createObjectURL(blob);
+                          a.download = lightboxArtifact.fileName;
+                          a.click();
+                          URL.revokeObjectURL(a.href);
+                        } catch {
+                          /* ignore */
+                        }
+                      }}
                     >
-                      Edit
+                      Download
                     </button>
-                  )}
+                    {canEdit && (
+                      <button
+                        type="button"
+                        className={styles.btnEdit}
+                        onClick={() => {
+                          startEditing(lightboxArtifact);
+                          closeLightbox();
+                        }}
+                      >
+                        Edit
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
     </div>
   );
 }

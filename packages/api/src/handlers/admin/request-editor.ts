@@ -1,9 +1,9 @@
-import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import {
   AdminUpdateUserAttributesCommand,
   CognitoIdentityProviderClient,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { PublishCommand, SNSClient } from '@aws-sdk/client-sns';
+import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { authorize } from '../../middleware/auth';
 import { errorResponse, successResponse } from '../../middleware/response';
 
@@ -25,9 +25,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       new AdminUpdateUserAttributesCommand({
         UserPoolId: process.env.COGNITO_USER_POOL_ID!,
         Username: user.userId,
-        UserAttributes: [
-          { Name: 'custom:editorRequested', Value: new Date().toISOString() },
-        ],
+        UserAttributes: [{ Name: 'custom:editorRequested', Value: new Date().toISOString() }],
       }),
     );
 
@@ -39,7 +37,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       }),
     );
 
-    return successResponse(200, { message: 'Editor access requested. An administrator will review your request.' });
+    return successResponse(200, {
+      message: 'Editor access requested. An administrator will review your request.',
+    });
   } catch (error) {
     return errorResponse(error);
   }

@@ -1,5 +1,5 @@
-import { API_CONFIG, createRelationshipSchema, isoNow, validate } from '@cloud-family-tree/shared';
 import type { CreateRelationshipInput, Person, Relationship } from '@cloud-family-tree/shared';
+import { API_CONFIG, createRelationshipSchema, isoNow, validate } from '@cloud-family-tree/shared';
 import { v4 as uuid } from 'uuid';
 import { NotFoundError, ValidationError } from '../middleware/error-handler';
 import { PersonRepository } from '../repositories/person.repository';
@@ -93,7 +93,6 @@ export class RelationshipService {
     const existing = await this.relationshipRepo.findById(relationshipId, relationshipType);
     if (!existing) return; // Already deleted — nothing to do
     await this.relationshipRepo.delete(relationshipId, relationshipType);
-
   }
 
   async listByPerson(personId: string): Promise<Relationship[]> {
@@ -103,15 +102,23 @@ export class RelationshipService {
     return this.relationshipRepo.findByPerson(personId);
   }
 
-  async getPersonDetail(
-    personId: string,
-  ): Promise<{
+  async getPersonDetail(personId: string): Promise<{
     person: Person;
     relationships: Relationship[];
     otherParent: Record<string, string>;
     spouseParents: Record<string, string[]>;
     parentMarriages: Record<string, { marriageDate?: string; divorceDate?: string }>;
-    relatedPeople: Record<string, { name: string; gender: string; birthDate?: string; birthDateQualifier?: string; deathDate?: string; deathDateQualifier?: string }>;
+    relatedPeople: Record<
+      string,
+      {
+        name: string;
+        gender: string;
+        birthDate?: string;
+        birthDateQualifier?: string;
+        deathDate?: string;
+        deathDateQualifier?: string;
+      }
+    >;
   }> {
     const person = await this.personRepo.findById(personId);
     if (!person) throw new NotFoundError('Person', personId);
@@ -150,13 +157,30 @@ export class RelationshipService {
     }
 
     // Batch-fetch related people (parallel)
-    const relatedPeople: Record<string, { name: string; gender: string; birthDate?: string; birthDateQualifier?: string; deathDate?: string; deathDateQualifier?: string }> = {};
+    const relatedPeople: Record<
+      string,
+      {
+        name: string;
+        gender: string;
+        birthDate?: string;
+        birthDateQualifier?: string;
+        deathDate?: string;
+        deathDateQualifier?: string;
+      }
+    > = {};
     await Promise.all(
       [...relatedIds].map(async (relId) => {
         const p = await this.personRepo.findById(relId);
         if (p) {
           const name = `${p.firstName}${p.middleName ? ` ${p.middleName}` : ''} ${p.lastName}`;
-          relatedPeople[relId] = { name, gender: p.gender, birthDate: p.birthDate, birthDateQualifier: p.birthDateQualifier, deathDate: p.deathDate, deathDateQualifier: p.deathDateQualifier };
+          relatedPeople[relId] = {
+            name,
+            gender: p.gender,
+            birthDate: p.birthDate,
+            birthDateQualifier: p.birthDateQualifier,
+            deathDate: p.deathDate,
+            deathDateQualifier: p.deathDateQualifier,
+          };
         }
       }),
     );
@@ -237,7 +261,14 @@ export class RelationshipService {
       );
     }
 
-    return { person, relationships: visibleRelationships, otherParent, spouseParents: visibleSpouseParents, parentMarriages, relatedPeople };
+    return {
+      person,
+      relationships: visibleRelationships,
+      otherParent,
+      spouseParents: visibleSpouseParents,
+      parentMarriages,
+      relatedPeople,
+    };
   }
 
   async getAncestors(personId: string, maxDepth?: number): Promise<Person[]> {

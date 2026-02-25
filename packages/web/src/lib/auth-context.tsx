@@ -3,8 +3,8 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import type { AuthUser } from './auth';
 import {
-  confirmSignUp as authConfirmSignUp,
   changePassword as authChangePassword,
+  confirmSignUp as authConfirmSignUp,
   signOut as authSignOut,
   signUp as authSignUp,
   completeNewPassword,

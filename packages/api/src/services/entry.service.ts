@@ -1,10 +1,10 @@
-import {
-  createEntrySchema,
-  isoNow,
-  updateEntrySchema,
-  validate,
+import type {
+  AuthenticatedUser,
+  Entry,
+  EntryType,
+  PaginatedResponse,
 } from '@cloud-family-tree/shared';
-import type { AuthenticatedUser, Entry, EntryType, PaginatedResponse } from '@cloud-family-tree/shared';
+import { createEntrySchema, isoNow, updateEntrySchema, validate } from '@cloud-family-tree/shared';
 import { v4 as uuid } from 'uuid';
 import { ForbiddenError, NotFoundError, ValidationError } from '../middleware/error-handler';
 import { EntryRepository } from '../repositories/entry.repository';
@@ -76,11 +76,7 @@ export class EntryService {
     return { ...existing, content: result.data!.content, updatedAt: now };
   }
 
-  async delete(
-    entryId: string,
-    personId: string,
-    user: AuthenticatedUser,
-  ): Promise<void> {
+  async delete(entryId: string, personId: string, user: AuthenticatedUser): Promise<void> {
     const existing = await this.entryRepo.findById(entryId, personId);
     if (!existing) return; // Already deleted — nothing to do
 
@@ -93,15 +89,11 @@ export class EntryService {
     } else if (type === 'issue') {
       // Author, editors, or admins can resolve issues
       canDelete =
-        existing.authorId === user.userId ||
-        user.role === 'editors' ||
-        user.role === 'admins';
+        existing.authorId === user.userId || user.role === 'editors' || user.role === 'admins';
     } else {
       // Wall entries: author, editors, or admins
       canDelete =
-        existing.authorId === user.userId ||
-        user.role === 'editors' ||
-        user.role === 'admins';
+        existing.authorId === user.userId || user.role === 'editors' || user.role === 'admins';
     }
 
     if (!canDelete) {

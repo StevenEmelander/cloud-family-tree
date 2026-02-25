@@ -18,8 +18,13 @@ const { mockService } = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../src/services/relationship.service', () => ({
-  RelationshipService: vi.fn().mockImplementation(() => mockService),
+  RelationshipService: vi.fn().mockImplementation(function () { return mockService; }),
 }));
+
+// Static imports — mocks are guaranteed to be in place before module loads
+import { handler as createRelationship } from '../../../src/handlers/relationships/create';
+import { handler as deleteRelationship } from '../../../src/handlers/relationships/delete';
+import { handler as listByPerson } from '../../../src/handlers/relationships/list-by-person';
 
 describe('Relationship handlers', () => {
   beforeEach(() => {
@@ -35,7 +40,6 @@ describe('Relationship handlers', () => {
         relationshipType: 'PARENT_CHILD',
       };
       mockService.create.mockResolvedValue(rel);
-      const { handler } = await import('../../../src/handlers/relationships/create');
 
       const event = makeEvent({
         body: JSON.stringify({
@@ -44,7 +48,7 @@ describe('Relationship handlers', () => {
           relationshipType: 'PARENT_CHILD',
         }),
       });
-      const result = await handler(event);
+      const result = await createRelationship(event);
 
       expect(result.statusCode).toBe(201);
       const body = JSON.parse(result.body);
@@ -55,13 +59,12 @@ describe('Relationship handlers', () => {
   describe('DELETE /relationships/:id', () => {
     it('deletes a relationship', async () => {
       mockService.delete.mockResolvedValue(undefined);
-      const { handler } = await import('../../../src/handlers/relationships/delete');
 
       const event = makeEvent({
         pathParameters: { id: 'rel-1' },
         queryStringParameters: { type: 'PARENT_CHILD' },
       });
-      const result = await handler(event);
+      const result = await deleteRelationship(event);
 
       expect(result.statusCode).toBe(204);
       expect(mockService.delete).toHaveBeenCalledWith('rel-1', 'PARENT_CHILD');
@@ -73,13 +76,12 @@ describe('Relationship handlers', () => {
       mockService.listByPerson.mockResolvedValue([
         { relationshipId: 'r1', relationshipType: 'SPOUSE' },
       ]);
-      const { handler } = await import('../../../src/handlers/relationships/list-by-person');
 
       const event = makeEvent({
         pathParameters: { id: 'person-1' },
         queryStringParameters: null,
       });
-      const result = await handler(event);
+      const result = await listByPerson(event);
 
       expect(result.statusCode).toBe(200);
       const body = JSON.parse(result.body);
@@ -90,13 +92,12 @@ describe('Relationship handlers', () => {
       mockService.getAncestors.mockResolvedValue([
         { personId: 'anc-1', firstName: 'Grandpa', lastName: 'Doe' },
       ]);
-      const { handler } = await import('../../../src/handlers/relationships/list-by-person');
 
       const event = makeEvent({
         pathParameters: { id: 'person-1' },
         queryStringParameters: { view: 'ancestors' },
       });
-      const result = await handler(event);
+      const result = await listByPerson(event);
 
       expect(result.statusCode).toBe(200);
       const body = JSON.parse(result.body);
@@ -108,26 +109,23 @@ describe('Relationship handlers', () => {
       mockService.getDescendants.mockResolvedValue([
         { personId: 'desc-1', firstName: 'Child', lastName: 'Doe' },
       ]);
-      const { handler } = await import('../../../src/handlers/relationships/list-by-person');
 
       const event = makeEvent({
         pathParameters: { id: 'person-1' },
         queryStringParameters: { view: 'descendants' },
       });
-      const result = await handler(event);
+      const result = await listByPerson(event);
 
       expect(result.statusCode).toBe(200);
       expect(mockService.getDescendants).toHaveBeenCalledWith('person-1');
     });
 
     it('returns error when id is missing', async () => {
-      const { handler } = await import('../../../src/handlers/relationships/list-by-person');
-
       const event = makeEvent({
         pathParameters: null,
         queryStringParameters: null,
       });
-      const result = await handler(event);
+      const result = await listByPerson(event);
 
       expect(result.statusCode).toBe(500);
     });

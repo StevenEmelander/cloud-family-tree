@@ -1,12 +1,12 @@
-import { Gender } from '@cloud-family-tree/shared';
 import type { Person } from '@cloud-family-tree/shared';
+import { Gender } from '@cloud-family-tree/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotFoundError, ValidationError } from '../../src/middleware/error-handler';
 import { PersonService } from '../../src/services/person.service';
 
 // Mock all repositories
 vi.mock('../../src/repositories/person.repository', () => ({
-  PersonRepository: vi.fn().mockImplementation(() => ({
+  PersonRepository: vi.fn().mockImplementation(function () { return ({
     findById: vi.fn(),
     findByExactName: vi.fn().mockResolvedValue([]),
     create: vi.fn(),
@@ -14,26 +14,26 @@ vi.mock('../../src/repositories/person.repository', () => ({
     delete: vi.fn(),
     findAll: vi.fn(),
     searchByName: vi.fn(),
-  })),
+  }); }),
 }));
 
 vi.mock('../../src/repositories/relationship.repository', () => ({
-  RelationshipRepository: vi.fn().mockImplementation(() => ({
+  RelationshipRepository: vi.fn().mockImplementation(function () { return ({
     deleteAllForPerson: vi.fn(),
     findChildrenOf: vi.fn().mockResolvedValue([]),
-  })),
+  }); }),
 }));
 
 vi.mock('../../src/repositories/artifact.repository', () => ({
-  ArtifactRepository: vi.fn().mockImplementation(() => ({
+  ArtifactRepository: vi.fn().mockImplementation(function () { return ({
     deleteAllForPerson: vi.fn(),
-  })),
+  }); }),
 }));
 
 vi.mock('../../src/repositories/entry.repository', () => ({
-  EntryRepository: vi.fn().mockImplementation(() => ({
+  EntryRepository: vi.fn().mockImplementation(function () { return ({
     deleteAllForPerson: vi.fn(),
-  })),
+  }); }),
 }));
 
 function makePerson(overrides: Partial<Person> = {}): Person {
@@ -58,14 +58,14 @@ describe('PersonService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     service = new PersonService();
-    personRepo = (
-      service as unknown as { personRepo: Record<string, ReturnType<typeof vi.fn>> }
-    ).personRepo;
+    personRepo = (service as unknown as { personRepo: Record<string, ReturnType<typeof vi.fn>> })
+      .personRepo;
     relationshipRepo = (
       service as unknown as { relationshipRepo: Record<string, ReturnType<typeof vi.fn>> }
     ).relationshipRepo;
-    artifactRepo = (service as unknown as { artifactRepo: Record<string, ReturnType<typeof vi.fn>> })
-      .artifactRepo;
+    artifactRepo = (
+      service as unknown as { artifactRepo: Record<string, ReturnType<typeof vi.fn>> }
+    ).artifactRepo;
     entryRepo = (service as unknown as { entryRepo: Record<string, ReturnType<typeof vi.fn>> })
       .entryRepo;
   });

@@ -11,8 +11,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     if (!user) return errorResponse(new Error('Authentication required'));
     const entryId = event.pathParameters?.id;
     const personId = event.queryStringParameters?.personId;
-    if (!entryId || !personId)
-      return errorResponse(new Error('Missing id or personId parameter'));
+    if (!entryId || !personId) return errorResponse(new Error('Missing id or personId parameter'));
     await service.delete(entryId, personId, user);
     return successResponse(204, null);
   } catch (error) {

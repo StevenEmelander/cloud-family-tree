@@ -1,10 +1,10 @@
 'use client';
 
-import { useAuth } from '@/lib/auth-context';
-import { siteConfig } from '@/lib/site-config';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/lib/auth-context';
+import { siteConfig } from '@/lib/site-config';
 import styles from './page.module.css';
 
 type Step = 'register' | 'verify' | 'done';
@@ -68,7 +68,8 @@ export default function RegisterPage() {
           <div className={styles.success}>
             <div className={styles.successTitle}>Registration Complete</div>
             <p className={styles.successText}>
-              Your account is ready! You can now sign in, browse the family tree, and contribute to memorial walls.
+              Your account is ready! You can now sign in, browse the family tree, and contribute to
+              memorial walls.
             </p>
             <p className={styles.successText}>
               Want to add or edit family members? You can request editor access from your account
@@ -165,8 +166,9 @@ export default function RegisterPage() {
             />
           </label>
           <div className={styles.notice}>
-            After verifying your email, you&apos;ll be able to browse the tree and contribute to memorial walls right
-            away. You can request editor access later from your account settings.
+            After verifying your email, you&apos;ll be able to browse the tree and contribute to
+            memorial walls right away. You can request editor access later from your account
+            settings.
           </div>
           {error && <p className={styles.error}>{error}</p>}
           <button type="submit" className={styles.button} disabled={loading}>

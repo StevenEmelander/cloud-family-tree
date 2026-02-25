@@ -2,22 +2,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GedcomImportService } from '../../src/gedcom/import.service';
 
 vi.mock('../../src/repositories/person.repository', () => ({
-  PersonRepository: vi.fn().mockImplementation(() => ({
+  PersonRepository: vi.fn().mockImplementation(function () { return ({
     batchCreate: vi.fn().mockResolvedValue(undefined),
     update: vi.fn().mockResolvedValue(undefined),
     iterateAll: vi.fn().mockImplementation(async function* () {
       // Empty DB by default — no existing people
     }),
-  })),
+  }); }),
 }));
 
 vi.mock('../../src/repositories/relationship.repository', () => ({
-  RelationshipRepository: vi.fn().mockImplementation(() => ({
+  RelationshipRepository: vi.fn().mockImplementation(function () { return ({
     batchCreate: vi.fn().mockResolvedValue(undefined),
     iterateAll: vi.fn().mockImplementation(async function* () {
       // Empty DB by default — no existing relationships
     }),
-  })),
+  }); }),
 }));
 
 const MINIMAL_GEDCOM = `0 HEAD
@@ -74,8 +74,7 @@ describe('GedcomImportService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     service = new GedcomImportService();
-    personRepo = (service as unknown as { personRepo: typeof personRepo })
-      .personRepo;
+    personRepo = (service as unknown as { personRepo: typeof personRepo }).personRepo;
     relationshipRepo = (service as unknown as { relationshipRepo: typeof relationshipRepo })
       .relationshipRepo;
   });

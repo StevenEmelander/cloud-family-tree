@@ -92,7 +92,10 @@ function abbreviateName(fullName: string, maxLen = 20): string {
   if (parts.length <= 2) return fullName;
   const first = parts[0];
   const last = parts[parts.length - 1];
-  const middles = parts.slice(1, -1).map((m) => m[0] + '.').join(' ');
+  const middles = parts
+    .slice(1, -1)
+    .map((m) => m[0] + '.')
+    .join(' ');
   return `${first} ${middles} ${last}`;
 }
 
@@ -126,7 +129,12 @@ function qualifiedYearWords(dateStr?: string, qualifier?: string): string | unde
   return `${word}${y}`;
 }
 
-function lifespan(node: { birthDate?: string; birthDateQualifier?: string; deathDate?: string; deathDateQualifier?: string }): string | undefined {
+function lifespan(node: {
+  birthDate?: string;
+  birthDateQualifier?: string;
+  deathDate?: string;
+  deathDateQualifier?: string;
+}): string | undefined {
   const b = qualifiedYear(node.birthDate, node.birthDateQualifier);
   const d = qualifiedYear(node.deathDate, node.deathDateQualifier);
   if (b && d) return `${b} to ${d}`;
@@ -177,7 +185,9 @@ export default function FamilyTree({
     const layoutMarriageBoxes: LayoutMarriageBox[] = [];
     const layoutEdges: LayoutEdge[] = [];
 
-    const sortedParents = [...parents].sort((a, b) => genderOrder(a.gender) - genderOrder(b.gender));
+    const sortedParents = [...parents].sort(
+      (a, b) => genderOrder(a.gender) - genderOrder(b.gender),
+    );
     const sortedChildren = [...children].sort((a, b) => {
       if (a.birthDate && b.birthDate) return a.birthDate.localeCompare(b.birthDate);
       if (a.birthDate) return -1;
@@ -186,7 +196,15 @@ export default function FamilyTree({
     });
 
     // Sort spouses by marriage date; fallback to youngest children first
-    const focalNode: PersonNode = { id: personId, name: personName, gender: personGender, birthDate: personBirthDate, birthDateQualifier: personBirthDateQualifier, deathDate: personDeathDate, deathDateQualifier: personDeathDateQualifier };
+    const focalNode: PersonNode = {
+      id: personId,
+      name: personName,
+      gender: personGender,
+      birthDate: personBirthDate,
+      birthDateQualifier: personBirthDateQualifier,
+      deathDate: personDeathDate,
+      deathDateQualifier: personDeathDateQualifier,
+    };
 
     const latestChildBirth = (spouseId: string): string =>
       children
@@ -211,7 +229,9 @@ export default function FamilyTree({
     let middleRow: PersonNode[];
     let extraSpouses: PersonNode[] = [];
     if (sortedSpouses.length <= 1) {
-      middleRow = [focalNode, ...sortedSpouses].sort((a, b) => genderOrder(a.gender) - genderOrder(b.gender));
+      middleRow = [focalNode, ...sortedSpouses].sort(
+        (a, b) => genderOrder(a.gender) - genderOrder(b.gender),
+      );
     } else {
       const left = sortedSpouses.slice(0, 1);
       const right = sortedSpouses.slice(1, 2);
@@ -221,14 +241,17 @@ export default function FamilyTree({
 
     // Build parent groups for focal + all spouses
     const allMiddle = [...middleRow, ...extraSpouses];
-    const hasAnyParents = sortedParents.length > 0 || Object.values(spouseParents).some((p) => p.length > 0);
+    const hasAnyParents =
+      sortedParents.length > 0 || Object.values(spouseParents).some((p) => p.length > 0);
 
     const parentGroups: ParentGroup[] = [];
     for (const node of allMiddle) {
       if (node.id === personId && sortedParents.length > 0) {
         parentGroups.push({ childId: personId, parents: sortedParents });
       } else if (node.id !== personId) {
-        const sp = (spouseParents[node.id] || []).sort((a, b) => genderOrder(a.gender) - genderOrder(b.gender));
+        const sp = (spouseParents[node.id] || []).sort(
+          (a, b) => genderOrder(a.gender) - genderOrder(b.gender),
+        );
         if (sp.length > 0) {
           parentGroups.push({ childId: node.id, parents: sp });
         }
@@ -239,12 +262,14 @@ export default function FamilyTree({
 
     let middleRowWidth = middleRow.length * NODE_W + (middleRow.length - 1) * H_GAP;
     for (const es of extraSpouses) {
-      middleRowWidth += H_GAP * 3 + marriageLabelAndWidth(marriages[es.id]).w + MARRIAGE_GAP * 2 + NODE_W;
+      middleRowWidth +=
+        H_GAP * 3 + marriageLabelAndWidth(marriages[es.id]).w + MARRIAGE_GAP * 2 + NODE_W;
     }
 
-    const childrenRowWidth = sortedChildren.length > 0
-      ? sortedChildren.length * NODE_W + (sortedChildren.length - 1) * H_GAP
-      : 0;
+    const childrenRowWidth =
+      sortedChildren.length > 0
+        ? sortedChildren.length * NODE_W + (sortedChildren.length - 1) * H_GAP
+        : 0;
 
     let parentRowWidth = 0;
     for (const group of parentGroups) {
@@ -253,7 +278,8 @@ export default function FamilyTree({
     }
     if (parentGroups.length > 1) parentRowWidth += (parentGroups.length - 1) * H_GAP * 2;
 
-    const totalWidth = Math.max(middleRowWidth, childrenRowWidth, parentRowWidth, NODE_W) + H_GAP * 2;
+    const totalWidth =
+      Math.max(middleRowWidth, childrenRowWidth, parentRowWidth, NODE_W) + H_GAP * 2;
 
     // --- Y positions ---
 
@@ -291,7 +317,9 @@ export default function FamilyTree({
         // Curved lines from each spouse's bottom center to marriage box sides
         const nextNodeCX = curX + H_GAP + NODE_W / 2;
         const mbCY = mbY + MARRIAGE_H / 2;
-        layoutEdges.push({ d: curveToSide(nx + NODE_W / 2, focalY + NODE_H, gapMidX - w / 2, mbCY) });
+        layoutEdges.push({
+          d: curveToSide(nx + NODE_W / 2, focalY + NODE_H, gapMidX - w / 2, mbCY),
+        });
         layoutEdges.push({ d: curveToSide(nextNodeCX, focalY + NODE_H, gapMidX + w / 2, mbCY) });
 
         layoutMarriageBoxes.push({ x: gapMidX - w / 2, y: mbY, w, label });
@@ -350,8 +378,12 @@ export default function FamilyTree({
 
           // Curved lines from each parent's bottom center to marriage box sides
           const pMbCY = mbY + MARRIAGE_H / 2;
-          layoutEdges.push({ d: curveToSide(p1x + NODE_W / 2, parentY + NODE_H, gapMidX - pW / 2, pMbCY) });
-          layoutEdges.push({ d: curveToSide(p2x + NODE_W / 2, parentY + NODE_H, gapMidX + pW / 2, pMbCY) });
+          layoutEdges.push({
+            d: curveToSide(p1x + NODE_W / 2, parentY + NODE_H, gapMidX - pW / 2, pMbCY),
+          });
+          layoutEdges.push({
+            d: curveToSide(p2x + NODE_W / 2, parentY + NODE_H, gapMidX + pW / 2, pMbCY),
+          });
           layoutMarriageBoxes.push({ x: gapMidX - pW / 2, y: mbY, w: pW, label: pLabel });
 
           layoutEdges.push({ d: bezier(gapMidX, mbY + MARRIAGE_H, targetCX, focalY) });
@@ -389,8 +421,31 @@ export default function FamilyTree({
       });
     }
 
-    return { nodes: layoutNodes, marriageBoxes: layoutMarriageBoxes, edges: layoutEdges, width: totalWidth, height: totalHeight, focalX, focalY };
-  }, [personName, personId, personGender, personBirthDate, personBirthDateQualifier, personDeathDate, personDeathDateQualifier, parents, children, spouses, marriages, otherParent, spouseParents, parentMarriages]);
+    return {
+      nodes: layoutNodes,
+      marriageBoxes: layoutMarriageBoxes,
+      edges: layoutEdges,
+      width: totalWidth,
+      height: totalHeight,
+      focalX,
+      focalY,
+    };
+  }, [
+    personName,
+    personId,
+    personGender,
+    personBirthDate,
+    personBirthDateQualifier,
+    personDeathDate,
+    personDeathDateQualifier,
+    parents,
+    children,
+    spouses,
+    marriages,
+    otherParent,
+    spouseParents,
+    parentMarriages,
+  ]);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -421,9 +476,7 @@ export default function FamilyTree({
             style={{ left: n.x, top: n.y, width: NODE_W, height: NODE_H }}
           >
             <span className={styles.nodeName}>{abbreviateName(n.name)}</span>
-            <span className={styles.nodeLabel}>
-              {lifespan(n) || ''}
-            </span>
+            <span className={styles.nodeLabel}>{lifespan(n) || ''}</span>
           </Link>
         ))}
         {marriageBoxes.map((mb, i) => (

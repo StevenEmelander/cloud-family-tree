@@ -48,7 +48,9 @@
   font-weight: 500;
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .navBtn:hover {
@@ -93,7 +95,9 @@
   background: transparent;
   color: var(--color-fg-muted);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .menuBtn:hover {
@@ -108,7 +112,7 @@
 
 /* Invisible bridge so hover is maintained when moving from button to menu */
 .dropdown::after {
-  content: '';
+  content: "";
   position: absolute;
   left: -8px;
   right: -8px;
@@ -132,7 +136,9 @@
   background: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.12),
+    0 2px 6px rgba(0, 0, 0, 0.06);
   z-index: 200;
   padding: 6px;
   animation: dropdownIn 0.15s ease-out;
@@ -218,7 +224,9 @@
   border-radius: 8px;
   text-align: left;
   cursor: pointer;
-  transition: background 0.1s, color 0.1s;
+  transition:
+    background 0.1s,
+    color 0.1s;
 }
 
 .dropdownItem:hover {

@@ -11,8 +11,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     if (!user) return errorResponse(new Error('Authentication required'));
     const entryId = event.pathParameters?.id;
     const personId = event.queryStringParameters?.personId;
-    if (!entryId || !personId)
-      return errorResponse(new Error('Missing id or personId parameter'));
+    if (!entryId || !personId) return errorResponse(new Error('Missing id or personId parameter'));
     const body = JSON.parse(event.body || '{}');
     const result = await service.update(entryId, personId, { content: body.content }, user);
     return successResponse(200, result);

@@ -1,10 +1,10 @@
 import { ScanCommand } from '@aws-sdk/lib-dynamodb';
 import type { NativeAttributeValue } from '@aws-sdk/util-dynamodb';
-import { ENTITY_PREFIX, GSI_NAMES } from '@cloud-family-tree/shared';
 import type { Entry, EntryType } from '@cloud-family-tree/shared';
-import { TableNames, docClient } from '../lib/dynamodb';
-import { BaseRepository } from './base.repository';
+import { ENTITY_PREFIX, GSI_NAMES } from '@cloud-family-tree/shared';
+import { docClient, TableNames } from '../lib/dynamodb';
 import type { QueryResult } from './base.repository';
+import { BaseRepository } from './base.repository';
 
 export class EntryRepository extends BaseRepository {
   protected get tableName() {
@@ -34,9 +34,7 @@ export class EntryRepository extends BaseRepository {
   }
 
   async findById(entryId: string, personId: string): Promise<Entry | null> {
-    const result = await this.getItem<Record<string, unknown>>(
-      this.toKey(entryId, personId),
-    );
+    const result = await this.getItem<Record<string, unknown>>(this.toKey(entryId, personId));
     return result ? this.fromRecord(result) : null;
   }
 
@@ -46,7 +44,12 @@ export class EntryRepository extends BaseRepository {
     return entry;
   }
 
-  async update(entryId: string, personId: string, content: string, updatedAt: string): Promise<void> {
+  async update(
+    entryId: string,
+    personId: string,
+    content: string,
+    updatedAt: string,
+  ): Promise<void> {
     await this.updateItem(this.toKey(entryId, personId), {
       content,
       updatedAt,

@@ -7,23 +7,42 @@ function daysInMonth(year: number, month: number): number {
 }
 
 /** Flexible date input: Year + optional Month + optional Day. Produces "YYYY", "YYYY-MM", or "YYYY-MM-DD". */
-export function FlexDateInput({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled?: boolean }) {
+export function FlexDateInput({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  disabled?: boolean;
+}) {
   const parts = value ? value.split('-') : [];
   const year = parts[0] || '';
   const month = parts[1] || '';
   const day = parts[2] || '';
 
   function assemble(y: string, m: string, d: string) {
-    if (!y) { onChange(''); return; }
-    if (!m) { onChange(y); return; }
-    if (!d) { onChange(`${y}-${m}`); return; }
+    if (!y) {
+      onChange('');
+      return;
+    }
+    if (!m) {
+      onChange(y);
+      return;
+    }
+    if (!d) {
+      onChange(`${y}-${m}`);
+      return;
+    }
     onChange(`${y}-${m}-${d}`);
   }
 
   const yearNum = Number.parseInt(year, 10);
   const monthNum = Number.parseInt(month, 10);
-  const maxDay = (year && month && !Number.isNaN(yearNum) && !Number.isNaN(monthNum))
-    ? daysInMonth(yearNum, monthNum) : 31;
+  const maxDay =
+    year && month && !Number.isNaN(yearNum) && !Number.isNaN(monthNum)
+      ? daysInMonth(yearNum, monthNum)
+      : 31;
 
   return (
     <div className={styles.flexDate}>
@@ -50,7 +69,9 @@ export function FlexDateInput({ value, onChange, disabled }: { value: string; on
       >
         <option value="">--</option>
         {MONTHS.map((name, i) => (
-          <option key={name} value={String(i + 1).padStart(2, '0')}>{name}</option>
+          <option key={name} value={String(i + 1).padStart(2, '0')}>
+            {name}
+          </option>
         ))}
       </select>
       <select
@@ -61,7 +82,9 @@ export function FlexDateInput({ value, onChange, disabled }: { value: string; on
       >
         <option value="">--</option>
         {Array.from({ length: maxDay }, (_, i) => (
-          <option key={i + 1} value={String(i + 1).padStart(2, '0')}>{i + 1}</option>
+          <option key={i + 1} value={String(i + 1).padStart(2, '0')}>
+            {i + 1}
+          </option>
         ))}
       </select>
     </div>

@@ -1,9 +1,9 @@
 import type { NativeAttributeValue } from '@aws-sdk/util-dynamodb';
-import { ENTITY_PREFIX, GSI_NAMES } from '@cloud-family-tree/shared';
 import type { Artifact } from '@cloud-family-tree/shared';
+import { ENTITY_PREFIX, GSI_NAMES } from '@cloud-family-tree/shared';
 import { TableNames } from '../lib/dynamodb';
-import { BaseRepository } from './base.repository';
 import type { QueryResult } from './base.repository';
+import { BaseRepository } from './base.repository';
 
 export class ArtifactRepository extends BaseRepository {
   protected get tableName() {
@@ -43,7 +43,11 @@ export class ArtifactRepository extends BaseRepository {
     return artifact;
   }
 
-  async update(artifactId: string, personId: string, updates: Record<string, unknown>): Promise<void> {
+  async update(
+    artifactId: string,
+    personId: string,
+    updates: Record<string, unknown>,
+  ): Promise<void> {
     await this.updateItem(this.toKey(artifactId, personId), updates);
   }
 

@@ -10,8 +10,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     await authorize(event, 'read');
     const artifactId = event.pathParameters?.id;
     const personId = event.queryStringParameters?.personId;
-    if (!artifactId || !personId)
-      return errorResponse(new Error('Missing artifactId or personId'));
+    if (!artifactId || !personId) return errorResponse(new Error('Missing artifactId or personId'));
 
     const associations = await service.getAssociations(artifactId, personId);
     return successResponse(200, { associations });

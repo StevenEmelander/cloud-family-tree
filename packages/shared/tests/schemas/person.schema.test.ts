@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Gender } from '../../src/types/person';
 import { createPersonSchema, updatePersonSchema } from '../../src/schemas/person.schema';
+import { Gender } from '../../src/types/person';
 
 describe('createPersonSchema', () => {
   const validInput = {

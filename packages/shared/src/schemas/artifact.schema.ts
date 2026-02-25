@@ -27,10 +27,7 @@ export const createArtifactSchema = z
     contentType: z.string(),
     caption: z.string().max(500).trim().optional(),
     source: z.string().max(200).trim().optional(),
-    date: z
-      .string()
-      .regex(flexDatePattern, 'Must be YYYY, YYYY-MM, or YYYY-MM-DD')
-      .optional(),
+    date: z.string().regex(flexDatePattern, 'Must be YYYY, YYYY-MM, or YYYY-MM-DD').optional(),
     isPrimary: z.boolean().optional(),
     metadata: z.record(z.string(), z.string()).optional(),
   })

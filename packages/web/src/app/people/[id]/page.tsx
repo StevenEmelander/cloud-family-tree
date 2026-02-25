@@ -6,6 +6,7 @@ export async function generateStaticParams() {
   return [{ id: '_' }];
 }
 
-export default function PersonDetailPage({ params }: { params: { id: string } }) {
-  return <PersonDetail id={params.id} />;
+export default async function PersonDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <PersonDetail id={id} />;
 }

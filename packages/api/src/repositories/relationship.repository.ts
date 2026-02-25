@@ -1,5 +1,5 @@
-import { ENTITY_PREFIX, GSI_NAMES } from '@cloud-family-tree/shared';
 import type { Relationship } from '@cloud-family-tree/shared';
+import { ENTITY_PREFIX, GSI_NAMES } from '@cloud-family-tree/shared';
 import { TableNames } from '../lib/dynamodb';
 import { BaseRepository } from './base.repository';
 

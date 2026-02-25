@@ -98,15 +98,24 @@ export class ApiStack extends cdk.Stack {
       'handlers/relationships/delete',
     );
 
-    const createArtifactUrlFn = createLambda('CreateArtifactUrl', 'handlers/artifacts/create-upload-url');
+    const createArtifactUrlFn = createLambda(
+      'CreateArtifactUrl',
+      'handlers/artifacts/create-upload-url',
+    );
     const confirmArtifactFn = createLambda('ConfirmArtifact', 'handlers/artifacts/confirm-upload');
     const listArtifactsFn = createLambda('ListArtifacts', 'handlers/artifacts/list');
     const deleteArtifactFn = createLambda('DeleteArtifact', 'handlers/artifacts/delete');
     const getArtifactUrlFn = createLambda('GetArtifactUrl', 'handlers/artifacts/get-url');
     const associateArtifactFn = createLambda('AssociateArtifact', 'handlers/artifacts/associate');
-    const disassociateArtifactFn = createLambda('DisassociateArtifact', 'handlers/artifacts/disassociate');
+    const disassociateArtifactFn = createLambda(
+      'DisassociateArtifact',
+      'handlers/artifacts/disassociate',
+    );
     const updateArtifactFn = createLambda('UpdateArtifact', 'handlers/artifacts/update');
-    const getArtifactAssociationsFn = createLambda('GetArtifactAssociations', 'handlers/artifacts/get-associations');
+    const getArtifactAssociationsFn = createLambda(
+      'GetArtifactAssociations',
+      'handlers/artifacts/get-associations',
+    );
 
     const gedcomImportFn = createLambda('GedcomImport', 'handlers/gedcom/import', 1024, 300);
     const gedcomExportFn = createLambda('GedcomExport', 'handlers/gedcom/export', 512, 60);
@@ -246,11 +255,7 @@ export class ApiStack extends cdk.Stack {
     );
 
     const relationship = relationships.addResource('{id}');
-    relationship.addMethod(
-      'PUT',
-      new apigateway.LambdaIntegration(updateRelationshipFn),
-      authOpts,
-    );
+    relationship.addMethod('PUT', new apigateway.LambdaIntegration(updateRelationshipFn), authOpts);
     relationship.addMethod(
       'DELETE',
       new apigateway.LambdaIntegration(deleteRelationshipFn),
@@ -259,10 +264,18 @@ export class ApiStack extends cdk.Stack {
 
     const artifacts = this.api.root.addResource('artifacts');
     const artifactsUploadUrl = artifacts.addResource('upload-url');
-    artifactsUploadUrl.addMethod('POST', new apigateway.LambdaIntegration(createArtifactUrlFn), authOpts);
+    artifactsUploadUrl.addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(createArtifactUrlFn),
+      authOpts,
+    );
 
     const artifactsConfirm = artifacts.addResource('confirm');
-    artifactsConfirm.addMethod('POST', new apigateway.LambdaIntegration(confirmArtifactFn), authOpts);
+    artifactsConfirm.addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(confirmArtifactFn),
+      authOpts,
+    );
 
     const artifactItem = artifacts.addResource('{id}');
     artifactItem.addMethod('PUT', new apigateway.LambdaIntegration(updateArtifactFn), authOpts);
@@ -272,13 +285,24 @@ export class ApiStack extends cdk.Stack {
     artifactItemUrl.addMethod('GET', new apigateway.LambdaIntegration(getArtifactUrlFn));
 
     const artifactAssociate = artifactItem.addResource('associate');
-    artifactAssociate.addMethod('POST', new apigateway.LambdaIntegration(associateArtifactFn), authOpts);
+    artifactAssociate.addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(associateArtifactFn),
+      authOpts,
+    );
 
     const artifactDisassociate = artifactAssociate.addResource('{personId}');
-    artifactDisassociate.addMethod('DELETE', new apigateway.LambdaIntegration(disassociateArtifactFn), authOpts);
+    artifactDisassociate.addMethod(
+      'DELETE',
+      new apigateway.LambdaIntegration(disassociateArtifactFn),
+      authOpts,
+    );
 
     const artifactAssociations = artifactItem.addResource('associations');
-    artifactAssociations.addMethod('GET', new apigateway.LambdaIntegration(getArtifactAssociationsFn));
+    artifactAssociations.addMethod(
+      'GET',
+      new apigateway.LambdaIntegration(getArtifactAssociationsFn),
+    );
 
     const tree = this.api.root.addResource('tree');
 
@@ -300,7 +324,11 @@ export class ApiStack extends cdk.Stack {
     adminUsersSetRole.addMethod('POST', new apigateway.LambdaIntegration(setUserRoleFn), authOpts);
 
     const adminUsersRequestEditor = adminUsers.addResource('request-editor');
-    adminUsersRequestEditor.addMethod('POST', new apigateway.LambdaIntegration(requestEditorFn), authOpts);
+    adminUsersRequestEditor.addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(requestEditorFn),
+      authOpts,
+    );
 
     const adminUser = adminUsers.addResource('{username}');
     adminUser.addMethod('DELETE', new apigateway.LambdaIntegration(deleteUserFn), authOpts);

@@ -1,5 +1,5 @@
-import { DateQualifier, Gender, RelationshipType, isoNow } from '@cloud-family-tree/shared';
 import type { GedcomImportResult, Person, Relationship } from '@cloud-family-tree/shared';
+import { DateQualifier, Gender, isoNow, RelationshipType } from '@cloud-family-tree/shared';
 import { readGedcom } from 'read-gedcom';
 import { v4 as uuid } from 'uuid';
 import { PersonRepository } from '../repositories/person.repository';
@@ -101,7 +101,11 @@ function parseGedcomDate(dateStr: string | undefined): ParsedDate {
     warnings.push(`Date qualifier "${qualifier}" not supported, stripped from "${dateStr}"`);
   }
 
-  return { date: parsed, qualifier: mappedQualifier, warning: warnings.length > 0 ? warnings.join('; ') : undefined };
+  return {
+    date: parsed,
+    qualifier: mappedQualifier,
+    warning: warnings.length > 0 ? warnings.join('; ') : undefined,
+  };
 }
 
 // Safely extract string value from a read-gedcom selection
@@ -132,7 +136,12 @@ function truncate(str: string, max: number, label: string, warnings: string[]): 
   return str.slice(0, max);
 }
 
-function personMatchKey(firstName: string, lastName: string, middleName?: string, birthDate?: string): string {
+function personMatchKey(
+  firstName: string,
+  lastName: string,
+  middleName?: string,
+  birthDate?: string,
+): string {
   return `${firstName.toUpperCase()}|${(middleName || '').toUpperCase()}|${lastName.toUpperCase()}|${birthDate || ''}`;
 }
 
@@ -198,7 +207,8 @@ export class GedcomImportService {
         let burialPlace: string | undefined;
         try {
           const buriPlaceVal = valStr(indi.get('BURI').get('PLAC'));
-          if (buriPlaceVal) burialPlace = truncate(buriPlaceVal, 200, `${pointer} burialPlace`, warnings);
+          if (buriPlaceVal)
+            burialPlace = truncate(buriPlaceVal, 200, `${pointer} burialPlace`, warnings);
         } catch {
           /* no BURI tag */
         }
@@ -254,7 +264,12 @@ export class GedcomImportService {
       if (existing.gedcomId) {
         gedcomIdIndex.set(existing.gedcomId, existing);
       }
-      const key = personMatchKey(existing.firstName, existing.lastName, existing.middleName, existing.birthDate);
+      const key = personMatchKey(
+        existing.firstName,
+        existing.lastName,
+        existing.middleName,
+        existing.birthDate,
+      );
       const arr = matchIndex.get(key) || [];
       arr.push(existing);
       matchIndex.set(key, arr);
@@ -270,7 +285,12 @@ export class GedcomImportService {
       // Priority 1: Match by GEDCOM pointer (exact, unambiguous)
       const gedcomMatch = gedcomIdIndex.get(pointer);
       // Priority 2: Fall back to name+birthDate matching (unique match only)
-      const key = personMatchKey(person.firstName, person.lastName, person.middleName, person.birthDate);
+      const key = personMatchKey(
+        person.firstName,
+        person.lastName,
+        person.middleName,
+        person.birthDate,
+      );
       const nameMatches = matchIndex.get(key);
       const existing = gedcomMatch ?? (nameMatches?.length === 1 ? nameMatches[0] : undefined);
 
@@ -285,7 +305,7 @@ export class GedcomImportService {
         if (
           person.biography &&
           person.biography !== existing.biography &&
-          (person.biography.length > (existing.biography?.length || 0))
+          person.biography.length > (existing.biography?.length || 0)
         ) {
           fields.biography = person.biography;
           peopleUpdated++;
@@ -324,7 +344,8 @@ export class GedcomImportService {
             const marriageDateResult = parseGedcomDate(valStr(marriageEvent.getDate()));
             if (marriageDateResult.warning) warnings.push(marriageDateResult.warning);
             let marriagePlace = valStr(marriageEvent.getPlace());
-            if (marriagePlace) marriagePlace = truncate(marriagePlace, 200, 'marriagePlace', warnings);
+            if (marriagePlace)
+              marriagePlace = truncate(marriagePlace, 200, 'marriagePlace', warnings);
             relationships.push({
               relationshipId: uuid(),
               relationshipType: RelationshipType.SPOUSE,

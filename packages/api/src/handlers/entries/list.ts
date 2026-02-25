@@ -15,7 +15,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const params = event.queryStringParameters || {};
     const limit = params.limit ? Number.parseInt(params.limit, 10) : undefined;
     const cursor = params.cursor;
-    const type = params.type && VALID_TYPES.has(params.type) ? (params.type as EntryType) : undefined;
+    const type =
+      params.type && VALID_TYPES.has(params.type) ? (params.type as EntryType) : undefined;
     const result = await service.listByPerson(personId, limit, cursor, type);
     return successResponse(200, result);
   } catch (error) {

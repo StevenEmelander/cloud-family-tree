@@ -1,21 +1,21 @@
 'use client';
 
-import { api, ApiValidationError } from '@/lib/api';
-import { useAuth } from '@/lib/auth-context';
-import { canEditPeople } from '@/lib/auth-utils';
-import { formatLifespan } from '@/lib/date-utils';
-import { FlexDateInput } from '@/components/FlexDateInput';
-import { QualifiedDateInput } from '@/components/QualifiedDateInput';
 import type { DateQualifier, Person, Relationship } from '@cloud-family-tree/shared';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { FlexDateInput } from '@/components/FlexDateInput';
+import { QualifiedDateInput } from '@/components/QualifiedDateInput';
+import { ApiValidationError, api } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
+import { canEditPeople } from '@/lib/auth-utils';
+import { formatLifespan } from '@/lib/date-utils';
 import AddRelationship from './add-relationship';
-import WallTab from './wall-tab';
-import IssuesTab from './issues-tab';
-import FamilyTree from './family-tree';
 import ArtifactsTab from './artifacts-tab';
+import FamilyTree from './family-tree';
+import IssuesTab from './issues-tab';
 import styles from './page.module.css';
+import WallTab from './wall-tab';
 
 type Tab = 'tree' | 'details' | 'artifacts' | 'wall' | 'issues';
 
@@ -45,10 +45,24 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('details');
-  const [relatedPeople, setRelatedPeople] = useState<Record<string, { name: string; gender: string; birthDate?: string; birthDateQualifier?: string; deathDate?: string; deathDateQualifier?: string }>>({});
+  const [relatedPeople, setRelatedPeople] = useState<
+    Record<
+      string,
+      {
+        name: string;
+        gender: string;
+        birthDate?: string;
+        birthDateQualifier?: string;
+        deathDate?: string;
+        deathDateQualifier?: string;
+      }
+    >
+  >({});
   const [otherParent, setOtherParent] = useState<Record<string, string>>({});
   const [spouseParents, setSpouseParents] = useState<Record<string, string[]>>({});
-  const [parentMarriages, setParentMarriages] = useState<Record<string, { marriageDate?: string; divorceDate?: string }>>({});
+  const [parentMarriages, setParentMarriages] = useState<
+    Record<string, { marriageDate?: string; divorceDate?: string }>
+  >({});
   const [relLoaded, setRelLoaded] = useState(false);
   const [visitedTabs, setVisitedTabs] = useState<Set<Tab>>(new Set());
 
@@ -93,7 +107,9 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
   const [spouseMetaError, setSpouseMetaError] = useState<string | null>(null);
 
   // Relationship add
-  const [addingRelationship, setAddingRelationship] = useState<'parent' | 'child' | 'spouse' | null>(null);
+  const [addingRelationship, setAddingRelationship] = useState<
+    'parent' | 'child' | 'spouse' | null
+  >(null);
 
   useEffect(() => {
     if (!id) {
@@ -113,7 +129,12 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
       switchTab('artifacts');
     } else if (urlTab === 'comments') {
       switchTab('wall'); // backwards compat
-    } else if (urlTab === 'details' || urlTab === 'artifacts' || urlTab === 'wall' || urlTab === 'issues') {
+    } else if (
+      urlTab === 'details' ||
+      urlTab === 'artifacts' ||
+      urlTab === 'wall' ||
+      urlTab === 'issues'
+    ) {
       setTab(urlTab as Tab);
     }
   }, [id, router, switchTab]);
@@ -161,7 +182,13 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
     const urlTab = params.get('tab');
     let resolvedTab = urlTab === 'media' || urlTab === 'photos' ? 'artifacts' : urlTab;
     if (resolvedTab === 'comments') resolvedTab = 'wall';
-    const initialTab = resolvedTab === 'tree' || resolvedTab === 'artifacts' || resolvedTab === 'wall' || resolvedTab === 'issues' ? resolvedTab as Tab : 'details';
+    const initialTab =
+      resolvedTab === 'tree' ||
+      resolvedTab === 'artifacts' ||
+      resolvedTab === 'wall' ||
+      resolvedTab === 'issues'
+        ? (resolvedTab as Tab)
+        : 'details';
     setTab(initialTab);
     setEditing(false);
     setAddingRelationship(null);
@@ -329,7 +356,8 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
     <div className={styles.container}>
       <div className={styles.profileHeader}>
         <h1>
-          {person.firstName} {person.middleName ? `${person.middleName} ` : ''}{person.lastName}
+          {person.firstName} {person.middleName ? `${person.middleName} ` : ''}
+          {person.lastName}
         </h1>
         {canEdit && tab === 'details' && (
           <button
@@ -433,7 +461,10 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
           marriages={Object.fromEntries(
             spouses.map((r) => {
               const spouseId = r.person1Id === id ? r.person2Id : r.person1Id;
-              return [spouseId, { marriageDate: r.metadata?.marriageDate, divorceDate: r.metadata?.divorceDate }];
+              return [
+                spouseId,
+                { marriageDate: r.metadata?.marriageDate, divorceDate: r.metadata?.divorceDate },
+              ];
             }),
           )}
           otherParent={otherParent}
@@ -469,7 +500,9 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
                     value={editForm.firstName}
                     onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
                   />
-                  {fieldErrors.firstName && <span className={styles.fieldError}>{fieldErrors.firstName}</span>}
+                  {fieldErrors.firstName && (
+                    <span className={styles.fieldError}>{fieldErrors.firstName}</span>
+                  )}
                 </label>
                 <label className={styles.formField}>
                   <span className={styles.formLabel}>Middle Name</span>
@@ -479,7 +512,9 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
                     value={editForm.middleName}
                     onChange={(e) => setEditForm({ ...editForm, middleName: e.target.value })}
                   />
-                  {fieldErrors.middleName && <span className={styles.fieldError}>{fieldErrors.middleName}</span>}
+                  {fieldErrors.middleName && (
+                    <span className={styles.fieldError}>{fieldErrors.middleName}</span>
+                  )}
                 </label>
                 <label className={styles.formField}>
                   <span className={styles.formLabel}>Last Name *</span>
@@ -489,7 +524,9 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
                     value={editForm.lastName}
                     onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
                   />
-                  {fieldErrors.lastName && <span className={styles.fieldError}>{fieldErrors.lastName}</span>}
+                  {fieldErrors.lastName && (
+                    <span className={styles.fieldError}>{fieldErrors.lastName}</span>
+                  )}
                 </label>
                 <label className={styles.formField}>
                   <span className={styles.formLabel}>Gender</span>
@@ -512,7 +549,9 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
                     date={editForm.birthDate}
                     onDateChange={(v) => setEditForm({ ...editForm, birthDate: v })}
                   />
-                  {fieldErrors.birthDate && <span className={styles.fieldError}>{fieldErrors.birthDate}</span>}
+                  {fieldErrors.birthDate && (
+                    <span className={styles.fieldError}>{fieldErrors.birthDate}</span>
+                  )}
                 </label>
                 <label className={styles.formField}>
                   <span className={styles.formLabel}>Birth Place</span>
@@ -522,7 +561,9 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
                     value={editForm.birthPlace}
                     onChange={(e) => setEditForm({ ...editForm, birthPlace: e.target.value })}
                   />
-                  {fieldErrors.birthPlace && <span className={styles.fieldError}>{fieldErrors.birthPlace}</span>}
+                  {fieldErrors.birthPlace && (
+                    <span className={styles.fieldError}>{fieldErrors.birthPlace}</span>
+                  )}
                 </label>
                 <label className={styles.formField}>
                   <span className={styles.formLabel}>Death Date</span>
@@ -532,7 +573,9 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
                     date={editForm.deathDate}
                     onDateChange={(v) => setEditForm({ ...editForm, deathDate: v })}
                   />
-                  {fieldErrors.deathDate && <span className={styles.fieldError}>{fieldErrors.deathDate}</span>}
+                  {fieldErrors.deathDate && (
+                    <span className={styles.fieldError}>{fieldErrors.deathDate}</span>
+                  )}
                 </label>
                 <label className={styles.formField}>
                   <span className={styles.formLabel}>Death Place</span>
@@ -542,7 +585,9 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
                     value={editForm.deathPlace}
                     onChange={(e) => setEditForm({ ...editForm, deathPlace: e.target.value })}
                   />
-                  {fieldErrors.deathPlace && <span className={styles.fieldError}>{fieldErrors.deathPlace}</span>}
+                  {fieldErrors.deathPlace && (
+                    <span className={styles.fieldError}>{fieldErrors.deathPlace}</span>
+                  )}
                 </label>
                 <label className={styles.formField}>
                   <span className={styles.formLabel}>Burial Place</span>
@@ -552,7 +597,9 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
                     value={editForm.burialPlace}
                     onChange={(e) => setEditForm({ ...editForm, burialPlace: e.target.value })}
                   />
-                  {fieldErrors.burialPlace && <span className={styles.fieldError}>{fieldErrors.burialPlace}</span>}
+                  {fieldErrors.burialPlace && (
+                    <span className={styles.fieldError}>{fieldErrors.burialPlace}</span>
+                  )}
                 </label>
                 <label className={styles.formField}>
                   <span className={styles.formLabel}>Biography</span>
@@ -563,13 +610,25 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
                     value={editForm.biography}
                     onChange={(e) => setEditForm({ ...editForm, biography: e.target.value })}
                   />
-                  {fieldErrors.biography && <span className={styles.fieldError}>{fieldErrors.biography}</span>}
+                  {fieldErrors.biography && (
+                    <span className={styles.fieldError}>{fieldErrors.biography}</span>
+                  )}
                 </label>
                 <div className={styles.formActions}>
-                  <button type="button" className={styles.btnSave} onClick={handleSave} disabled={saving}>
+                  <button
+                    type="button"
+                    className={styles.btnSave}
+                    onClick={handleSave}
+                    disabled={saving}
+                  >
                     {saving ? 'Saving...' : 'Save'}
                   </button>
-                  <button type="button" className={styles.btnCancel} onClick={() => setEditing(false)} disabled={saving}>
+                  <button
+                    type="button"
+                    className={styles.btnCancel}
+                    onClick={() => setEditing(false)}
+                    disabled={saving}
+                  >
                     Cancel
                   </button>
                 </div>
@@ -592,7 +651,9 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
                   />
                 )}
                 {person.burialPlace && <DetailRow label="Buried" value={person.burialPlace} />}
-                {person.biography && <DetailRow label="Biography" value={person.biography} linkify />}
+                {person.biography && (
+                  <DetailRow label="Biography" value={person.biography} linkify />
+                )}
               </div>
             </div>
           )}
@@ -730,7 +791,20 @@ function DetailRow({ label, value, linkify }: { label: string; value: string; li
   );
 }
 
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_NAMES = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
 const QUALIFIER_LABELS: Record<string, string> = {
   ABT: 'About',
@@ -774,7 +848,17 @@ function RelationshipSection({
   title: string;
   relationships: Relationship[];
   getId: (r: Relationship) => string;
-  names: Record<string, { name: string; gender: string; birthDate?: string; birthDateQualifier?: string; deathDate?: string; deathDateQualifier?: string }>;
+  names: Record<
+    string,
+    {
+      name: string;
+      gender: string;
+      birthDate?: string;
+      birthDateQualifier?: string;
+      deathDate?: string;
+      deathDateQualifier?: string;
+    }
+  >;
   canEdit: boolean;
   confirmingDelete: string | null;
   onConfirmStart: (id: string) => void;
@@ -821,8 +905,16 @@ function RelationshipSection({
                 {canEdit && isConfirming && (
                   <span className={styles.confirmDelete}>
                     <span className={styles.confirmText}>Remove?</span>
-                    <button type="button" className={styles.btnConfirmYes} onClick={() => onRemove(r.relationshipId)}>Yes</button>
-                    <button type="button" className={styles.btnConfirmNo} onClick={onConfirmCancel}>No</button>
+                    <button
+                      type="button"
+                      className={styles.btnConfirmYes}
+                      onClick={() => onRemove(r.relationshipId)}
+                    >
+                      Yes
+                    </button>
+                    <button type="button" className={styles.btnConfirmNo} onClick={onConfirmCancel}>
+                      No
+                    </button>
                   </span>
                 )}
               </div>
@@ -857,7 +949,17 @@ function SpouseSection({
 }: {
   spouses: Relationship[];
   personId: string;
-  names: Record<string, { name: string; gender: string; birthDate?: string; birthDateQualifier?: string; deathDate?: string; deathDateQualifier?: string }>;
+  names: Record<
+    string,
+    {
+      name: string;
+      gender: string;
+      birthDate?: string;
+      birthDateQualifier?: string;
+      deathDate?: string;
+      deathDateQualifier?: string;
+    }
+  >;
   canEdit: boolean;
   confirmingDelete: string | null;
   onConfirmStart: (id: string) => void;
@@ -865,8 +967,18 @@ function SpouseSection({
   onRemove: (id: string) => void;
   onAdd: () => void;
   editingSpouse: string | null;
-  spouseMetaForm: { marriageDate: string; marriagePlace: string; divorceDate: string; divorcePlace: string };
-  setSpouseMetaForm: (form: { marriageDate: string; marriagePlace: string; divorceDate: string; divorcePlace: string }) => void;
+  spouseMetaForm: {
+    marriageDate: string;
+    marriagePlace: string;
+    divorceDate: string;
+    divorcePlace: string;
+  };
+  setSpouseMetaForm: (form: {
+    marriageDate: string;
+    marriagePlace: string;
+    divorceDate: string;
+    divorcePlace: string;
+  }) => void;
   spouseMetaSaving: boolean;
   spouseMetaError: string | null;
   onStartEdit: (r: Relationship) => void;
@@ -892,7 +1004,9 @@ function SpouseSection({
             const isConfirming = confirmingDelete === r.relationshipId;
 
             const spouseInfo = names[spouseId];
-            const life = spouseInfo ? formatLifespan(spouseInfo.birthDate, spouseInfo.deathDate) : '';
+            const life = spouseInfo
+              ? formatLifespan(spouseInfo.birthDate, spouseInfo.deathDate)
+              : '';
 
             const metaLines: string[] = [];
             if (r.metadata?.marriageDate || r.metadata?.marriagePlace) {
@@ -947,8 +1061,20 @@ function SpouseSection({
                   {canEdit && isConfirming && (
                     <span className={styles.confirmDelete}>
                       <span className={styles.confirmText}>Remove?</span>
-                      <button type="button" className={styles.btnConfirmYes} onClick={() => onRemove(r.relationshipId)}>Yes</button>
-                      <button type="button" className={styles.btnConfirmNo} onClick={onConfirmCancel}>No</button>
+                      <button
+                        type="button"
+                        className={styles.btnConfirmYes}
+                        onClick={() => onRemove(r.relationshipId)}
+                      >
+                        Yes
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.btnConfirmNo}
+                        onClick={onConfirmCancel}
+                      >
+                        No
+                      </button>
                     </span>
                   )}
                 </div>
@@ -960,7 +1086,9 @@ function SpouseSection({
                         <span className={styles.formLabel}>Marriage Date</span>
                         <FlexDateInput
                           value={spouseMetaForm.marriageDate}
-                          onChange={(v) => setSpouseMetaForm({ ...spouseMetaForm, marriageDate: v })}
+                          onChange={(v) =>
+                            setSpouseMetaForm({ ...spouseMetaForm, marriageDate: v })
+                          }
                         />
                       </label>
                       <label className={styles.formField}>
@@ -969,7 +1097,9 @@ function SpouseSection({
                           type="text"
                           className={styles.formInput}
                           value={spouseMetaForm.marriagePlace}
-                          onChange={(e) => setSpouseMetaForm({ ...spouseMetaForm, marriagePlace: e.target.value })}
+                          onChange={(e) =>
+                            setSpouseMetaForm({ ...spouseMetaForm, marriagePlace: e.target.value })
+                          }
                         />
                       </label>
                       <label className={styles.formField}>
@@ -985,15 +1115,27 @@ function SpouseSection({
                           type="text"
                           className={styles.formInput}
                           value={spouseMetaForm.divorcePlace}
-                          onChange={(e) => setSpouseMetaForm({ ...spouseMetaForm, divorcePlace: e.target.value })}
+                          onChange={(e) =>
+                            setSpouseMetaForm({ ...spouseMetaForm, divorcePlace: e.target.value })
+                          }
                         />
                       </label>
                     </div>
                     <div className={styles.formActions}>
-                      <button type="button" className={styles.btnSave} onClick={onSaveMeta} disabled={spouseMetaSaving}>
+                      <button
+                        type="button"
+                        className={styles.btnSave}
+                        onClick={onSaveMeta}
+                        disabled={spouseMetaSaving}
+                      >
                         {spouseMetaSaving ? 'Saving...' : 'Save'}
                       </button>
-                      <button type="button" className={styles.btnCancel} onClick={onCancelEdit} disabled={spouseMetaSaving}>
+                      <button
+                        type="button"
+                        className={styles.btnCancel}
+                        onClick={onCancelEdit}
+                        disabled={spouseMetaSaving}
+                      >
                         Cancel
                       </button>
                     </div>
