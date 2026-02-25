@@ -105,6 +105,8 @@ export class EntryRepository extends BaseRepository {
     };
   }
 
+  // Uses Scan since no GSI covers all entries globally. Acceptable at current scale;
+  // if the table grows large, add a GSI with a constant partition key (e.g., ENTITY#ENTRY).
   async findAll(limit?: number, cursor?: string): Promise<QueryResult<Entry>> {
     let exclusiveStartKey: Record<string, NativeAttributeValue> | undefined;
     if (cursor) {

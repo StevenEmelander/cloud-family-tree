@@ -185,6 +185,7 @@ export class ApiStack extends cdk.Stack {
       deployOptions: {
         throttlingRateLimit: 1000,
         throttlingBurstLimit: 500,
+        loggingLevel: apigateway.MethodLoggingLevel.ERROR,
       },
     });
 

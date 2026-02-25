@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { API_CONFIG, ARTIFACT_CONFIG } from '../constants';
 import { ArtifactType } from '../types/artifact';
-
-const flexDatePattern = /^\d{4}(-\d{2}(-\d{2})?)?$/;
+import { flexDatePattern, isValidFlexDate } from '../utils/date.utils';
 
 const PDF_ALLOWED_TYPES = new Set([
   ArtifactType.BIRTH_RECORD,
@@ -27,7 +26,7 @@ export const createArtifactSchema = z
     contentType: z.string(),
     caption: z.string().max(500).trim().optional(),
     source: z.string().max(200).trim().optional(),
-    date: z.string().regex(flexDatePattern, 'Must be YYYY, YYYY-MM, or YYYY-MM-DD').optional(),
+    date: z.string().regex(flexDatePattern, 'Must be YYYY, YYYY-MM, or YYYY-MM-DD').refine(isValidFlexDate, 'Invalid date').optional(),
     isPrimary: z.boolean().optional(),
     metadata: z.record(z.string(), z.string()).optional(),
   })
@@ -57,7 +56,7 @@ export const updateArtifactSchema = z.object({
     .optional(),
   date: z
     .union([
-      z.string().regex(flexDatePattern, 'Must be YYYY, YYYY-MM, or YYYY-MM-DD'),
+      z.string().regex(flexDatePattern, 'Must be YYYY, YYYY-MM, or YYYY-MM-DD').refine(isValidFlexDate, 'Invalid date'),
       z.literal(''),
     ])
     .transform((v) => (v === '' ? undefined : v))

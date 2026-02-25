@@ -1,5 +1,6 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { authorize } from '../../middleware/auth';
+import { AppError } from '../../middleware/error-handler';
 import { errorResponse, successResponse } from '../../middleware/response';
 import { UserAdminService } from '../../services/user-admin.service';
 
@@ -10,10 +11,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const user = await authorize(event, 'admin');
     const username = event.pathParameters?.username;
     if (!username) {
-      return successResponse(400, { message: 'username is required' });
+      throw new AppError(400, 'username is required');
     }
     if (username === user?.email) {
-      return successResponse(400, { message: 'Cannot delete yourself' });
+      throw new AppError(400, 'Cannot delete yourself');
     }
     await service.deleteUser(username);
     return successResponse(200, { message: 'User deleted' });

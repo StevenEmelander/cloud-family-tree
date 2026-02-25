@@ -1,26 +1,6 @@
 import { z } from 'zod';
 import { DateQualifier, Gender } from '../types/person';
-
-// Accepts YYYY, YYYY-MM, or YYYY-MM-DD
-const flexDatePattern = /^\d{4}(-\d{2}(-\d{2})?)?$/;
-
-function isValidFlexDate(val: string): boolean {
-  const parts = val.split('-').map(Number);
-  if (parts.length === 1) {
-    const year = parts[0] ?? 0;
-    return year >= 1 && year <= 9999;
-  }
-  if (parts.length === 2) {
-    const [, m] = parts;
-    const month = m ?? 0;
-    return month >= 1 && month <= 12;
-  }
-  const [y, m, d] = parts;
-  const yVal = y ?? 0;
-  const mVal = m ?? 0;
-  const date = new Date(yVal, mVal - 1, d);
-  return date.getFullYear() === yVal && date.getMonth() === mVal - 1 && date.getDate() === d;
-}
+import { flexDatePattern, isValidFlexDate } from '../utils/date.utils';
 
 const isoDate = z
   .string()

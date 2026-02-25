@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { formatLifespan } from '@/lib/date-utils';
+import { getErrorMessage } from '@/lib/errors';
 import { siteConfig } from '@/lib/site-config';
 import styles from './page.module.css';
 
@@ -38,7 +39,7 @@ function HomePageContent() {
       setPeople(data.items);
       setNextCursor(data.lastEvaluatedKey);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load people');
+      setError(getErrorMessage(err, 'Failed to load people'));
     } finally {
       setLoading(false);
     }

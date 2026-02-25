@@ -14,6 +14,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { canEditPeople } from '@/lib/auth-utils';
 import { formatLifespan } from '@/lib/date-utils';
+import { getErrorMessage } from '@/lib/errors';
 import styles from './artifacts-tab.module.css';
 
 const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp';
@@ -196,7 +197,7 @@ export default function ArtifactsTab({
 
       setArtifacts(items);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load artifacts');
+      setError(getErrorMessage(err, 'Failed to load artifacts'));
     } finally {
       setLoading(false);
     }
@@ -844,7 +845,7 @@ export default function ArtifactsTab({
       if ((isPrimary || anyUpdated) && onPersonUpdated) onPersonUpdated();
       await loadArtifacts();
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Upload failed');
+      setUploadError(getErrorMessage(err, 'Upload failed'));
     } finally {
       setUploading(false);
     }
@@ -1127,7 +1128,7 @@ export default function ArtifactsTab({
       if ((isPrimary || anyUpdated) && onPersonUpdated) onPersonUpdated();
       await loadArtifacts();
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Failed to save changes');
+      setUploadError(getErrorMessage(err, 'Failed to save changes'));
     } finally {
       setEditSaving(false);
     }
@@ -1139,7 +1140,7 @@ export default function ArtifactsTab({
       await api.deleteArtifact(artifact.artifactId, personId);
       await loadArtifacts();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete artifact');
+      setError(getErrorMessage(err, 'Failed to delete artifact'));
     }
   }
 

@@ -7,7 +7,7 @@ import {
   CognitoIdentityProviderClient,
   ListUsersCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
-import type { AdminUserListItem } from '@cloud-family-tree/shared';
+import type { AdminUserListItem, DisplayRole } from '@cloud-family-tree/shared';
 
 const cognito = new CognitoIdentityProviderClient({});
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID ?? '';
@@ -92,7 +92,7 @@ export class UserAdminService {
     );
   }
 
-  async setUserRole(username: string, role: 'admin' | 'editor' | 'visitor'): Promise<void> {
+  async setUserRole(username: string, role: DisplayRole): Promise<void> {
     // Remove from all groups first
     const groupsResult = await cognito.send(
       new AdminListGroupsForUserCommand({

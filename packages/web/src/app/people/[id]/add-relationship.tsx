@@ -3,6 +3,7 @@
 import type { Person } from '@cloud-family-tree/shared';
 import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
+import { getErrorMessage } from '@/lib/errors';
 import styles from './add-relationship.module.css';
 
 interface AddRelationshipProps {
@@ -139,7 +140,7 @@ export default function AddRelationship({
       }
       onComplete();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create relationship');
+      setError(getErrorMessage(err, 'Failed to create relationship'));
       setLinking(false);
     }
   }
@@ -159,7 +160,7 @@ export default function AddRelationship({
       });
       await linkPerson(person.personId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create person');
+      setError(getErrorMessage(err, 'Failed to create person'));
       setLinking(false);
     }
   }

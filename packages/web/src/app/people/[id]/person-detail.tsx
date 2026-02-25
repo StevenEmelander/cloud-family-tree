@@ -3,23 +3,41 @@
 import type { DateQualifier, Person, Relationship } from '@cloud-family-tree/shared';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { FlexDateInput } from '@/components/FlexDateInput';
 import { QualifiedDateInput } from '@/components/QualifiedDateInput';
 import { ApiValidationError, api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { canEditPeople } from '@/lib/auth-utils';
-import { formatLifespan } from '@/lib/date-utils';
-import dynamic from 'next/dynamic';
+import { formatDate, formatLifespan } from '@/lib/date-utils';
+import { getErrorMessage } from '@/lib/errors';
 import AddRelationship from './add-relationship';
 import styles from './page.module.css';
 
-const FamilyTree = dynamic(() => import('./family-tree'), { ssr: false });
-const ArtifactsTab = dynamic(() => import('./artifacts-tab'), { ssr: false });
-const WallTab = dynamic(() => import('./wall-tab'), { ssr: false });
-const IssuesTab = dynamic(() => import('./issues-tab'), { ssr: false });
+const FamilyTree = lazy(() => import('./family-tree'));
+const ArtifactsTab = lazy(() => import('./artifacts-tab'));
+const WallTab = lazy(() => import('./wall-tab'));
+const IssuesTab = lazy(() => import('./issues-tab'));
 
 type Tab = 'tree' | 'details' | 'artifacts' | 'wall' | 'issues';
+
+type RelatedPeopleMap = Record<
+  string,
+  { name: string; gender: string; birthDate?: string; birthDateQualifier?: string; deathDate?: string; deathDateQualifier?: string }
+>;
+
+function toPersonNode(pid: string, people: RelatedPeopleMap) {
+  const p = people[pid];
+  return {
+    id: pid,
+    name: p?.name || 'Loading...',
+    gender: p?.gender,
+    birthDate: p?.birthDate,
+    birthDateQualifier: p?.birthDateQualifier,
+    deathDate: p?.deathDate,
+    deathDateQualifier: p?.deathDateQualifier,
+  };
+}
 
 interface EditForm {
   firstName: string;
@@ -43,23 +61,12 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
 
   const [id, setId] = useState(paramId !== '_' && paramId !== 'new' ? paramId : '');
   const [person, setPerson] = useState<Person | null>(null);
+  const personRef = useRef<Person | null>(null);
   const [relationships, setRelationships] = useState<Relationship[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('details');
-  const [relatedPeople, setRelatedPeople] = useState<
-    Record<
-      string,
-      {
-        name: string;
-        gender: string;
-        birthDate?: string;
-        birthDateQualifier?: string;
-        deathDate?: string;
-        deathDateQualifier?: string;
-      }
-    >
-  >({});
+  const [relatedPeople, setRelatedPeople] = useState<RelatedPeopleMap>({});
   const [otherParent, setOtherParent] = useState<Record<string, string>>({});
   const [spouseParents, setSpouseParents] = useState<Record<string, string[]>>({});
   const [parentMarriages, setParentMarriages] = useState<
@@ -148,9 +155,10 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
     setError(null);
     try {
       const data = await api.getPerson(id);
+      personRef.current = data;
       setPerson(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load person');
+      setError(getErrorMessage(err, 'Failed to load person'));
     } finally {
       setLoading(false);
     }
@@ -159,10 +167,11 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
   // Full load: person + relationships (for details/tree tabs)
   const loadData = useCallback(async () => {
     if (!id) return;
-    setLoading(true);
+    if (!personRef.current) setLoading(true);
     setError(null);
     try {
       const relData = await api.getPersonDetail(id);
+      personRef.current = relData.person;
       setPerson(relData.person);
       setRelationships(relData.items);
       setOtherParent(relData.otherParent || {});
@@ -171,7 +180,7 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
       setRelatedPeople(relData.relatedPeople || {});
       setRelLoaded(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load person');
+      setError(getErrorMessage(err, 'Failed to load person'));
     } finally {
       setLoading(false);
     }
@@ -266,7 +275,7 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
         setEditError(err.message);
         setFieldErrors(err.fieldErrors);
       } else {
-        setEditError(err instanceof Error ? err.message : 'Failed to save changes');
+        setEditError(getErrorMessage(err, 'Failed to save changes'));
       }
     } finally {
       setSaving(false);
@@ -281,7 +290,7 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
       setConfirmingDelete(null);
       await loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove relationship');
+      setError(getErrorMessage(err, 'Failed to remove relationship'));
     }
   }
 
@@ -317,7 +326,7 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
       setEditingSpouse(null);
       await loadData();
     } catch (err) {
-      setSpouseMetaError(err instanceof Error ? err.message : 'Failed to save');
+      setSpouseMetaError(getErrorMessage(err, 'Failed to save'));
     } finally {
       setSpouseMetaSaving(false);
     }
@@ -327,13 +336,26 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
     return `${styles.formInput}${fieldErrors[field] ? ` ${styles.formInputError}` : ''}`;
   }
 
-  if (loading)
+  const textField = (label: string, field: keyof EditForm, required?: boolean) => (
+    <label key={field} className={styles.formField}>
+      <span className={styles.formLabel}>{label}{required ? ' *' : ''}</span>
+      <input
+        type="text"
+        className={inputClass(field)}
+        value={editForm[field]}
+        onChange={(e) => setEditForm({ ...editForm, [field]: e.target.value })}
+      />
+      {fieldErrors[field] && <span className={styles.fieldError}>{fieldErrors[field]}</span>}
+    </label>
+  );
+
+  if (loading && !person)
     return (
       <div className={styles.container}>
         <p>Loading...</p>
       </div>
     );
-  if (error)
+  if (error && !person)
     return (
       <div className={styles.container}>
         <p className={styles.error}>{error}</p>
@@ -422,7 +444,7 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
       </div>
 
       {tab === 'tree' && (
-        <FamilyTree
+        <Suspense><FamilyTree
           personName={`${person.firstName}${person.middleName ? ` ${person.middleName}` : ''} ${person.lastName}`}
           personId={id}
           personGender={person.gender}
@@ -430,37 +452,10 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
           personBirthDateQualifier={person.birthDateQualifier}
           personDeathDate={person.deathDate}
           personDeathDateQualifier={person.deathDateQualifier}
-          parents={parents.map((r) => ({
-            id: r.person1Id,
-            name: relatedPeople[r.person1Id]?.name || 'Loading...',
-            gender: relatedPeople[r.person1Id]?.gender,
-            birthDate: relatedPeople[r.person1Id]?.birthDate,
-            birthDateQualifier: relatedPeople[r.person1Id]?.birthDateQualifier,
-            deathDate: relatedPeople[r.person1Id]?.deathDate,
-            deathDateQualifier: relatedPeople[r.person1Id]?.deathDateQualifier,
-          }))}
+          parents={parents.map((r) => toPersonNode(r.person1Id, relatedPeople))}
           // biome-ignore lint/correctness/noChildrenProp: "children" is a data prop (PersonNode[]) on FamilyTree, not React children
-          children={children.map((r) => ({
-            id: r.person2Id,
-            name: relatedPeople[r.person2Id]?.name || 'Loading...',
-            gender: relatedPeople[r.person2Id]?.gender,
-            birthDate: relatedPeople[r.person2Id]?.birthDate,
-            birthDateQualifier: relatedPeople[r.person2Id]?.birthDateQualifier,
-            deathDate: relatedPeople[r.person2Id]?.deathDate,
-            deathDateQualifier: relatedPeople[r.person2Id]?.deathDateQualifier,
-          }))}
-          spouses={spouses.map((r) => {
-            const spouseId = r.person1Id === id ? r.person2Id : r.person1Id;
-            return {
-              id: spouseId,
-              name: relatedPeople[spouseId]?.name || 'Loading...',
-              gender: relatedPeople[spouseId]?.gender,
-              birthDate: relatedPeople[spouseId]?.birthDate,
-              birthDateQualifier: relatedPeople[spouseId]?.birthDateQualifier,
-              deathDate: relatedPeople[spouseId]?.deathDate,
-              deathDateQualifier: relatedPeople[spouseId]?.deathDateQualifier,
-            };
-          })}
+          children={children.map((r) => toPersonNode(r.person2Id, relatedPeople))}
+          spouses={spouses.map((r) => toPersonNode(r.person1Id === id ? r.person2Id : r.person1Id, relatedPeople))}
           marriages={Object.fromEntries(
             spouses.map((r) => {
               const spouseId = r.person1Id === id ? r.person2Id : r.person1Id;
@@ -474,19 +469,11 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
           spouseParents={Object.fromEntries(
             Object.entries(spouseParents).map(([spouseId, parentIds]) => [
               spouseId,
-              parentIds.map((pid) => ({
-                id: pid,
-                name: relatedPeople[pid]?.name || 'Loading...',
-                gender: relatedPeople[pid]?.gender,
-                birthDate: relatedPeople[pid]?.birthDate,
-                birthDateQualifier: relatedPeople[pid]?.birthDateQualifier,
-                deathDate: relatedPeople[pid]?.deathDate,
-                deathDateQualifier: relatedPeople[pid]?.deathDateQualifier,
-              })),
+              parentIds.map((pid) => toPersonNode(pid, relatedPeople)),
             ]),
           )}
           parentMarriages={parentMarriages}
-        />
+        /></Suspense>
       )}
 
       {tab === 'details' && (
@@ -495,42 +482,9 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
             <div className={styles.detailsCard}>
               {editError && <p className={styles.editError}>{editError}</p>}
               <div className={styles.editForm}>
-                <label className={styles.formField}>
-                  <span className={styles.formLabel}>First Name *</span>
-                  <input
-                    type="text"
-                    className={inputClass('firstName')}
-                    value={editForm.firstName}
-                    onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
-                  />
-                  {fieldErrors.firstName && (
-                    <span className={styles.fieldError}>{fieldErrors.firstName}</span>
-                  )}
-                </label>
-                <label className={styles.formField}>
-                  <span className={styles.formLabel}>Middle Name</span>
-                  <input
-                    type="text"
-                    className={inputClass('middleName')}
-                    value={editForm.middleName}
-                    onChange={(e) => setEditForm({ ...editForm, middleName: e.target.value })}
-                  />
-                  {fieldErrors.middleName && (
-                    <span className={styles.fieldError}>{fieldErrors.middleName}</span>
-                  )}
-                </label>
-                <label className={styles.formField}>
-                  <span className={styles.formLabel}>Last Name *</span>
-                  <input
-                    type="text"
-                    className={inputClass('lastName')}
-                    value={editForm.lastName}
-                    onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
-                  />
-                  {fieldErrors.lastName && (
-                    <span className={styles.fieldError}>{fieldErrors.lastName}</span>
-                  )}
-                </label>
+                {textField('First Name', 'firstName', true)}
+                {textField('Middle Name', 'middleName')}
+                {textField('Last Name', 'lastName', true)}
                 <label className={styles.formField}>
                   <span className={styles.formLabel}>Gender</span>
                   <select
@@ -557,18 +511,7 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
                     <span className={styles.fieldError}>{fieldErrors.birthDate}</span>
                   )}
                 </label>
-                <label className={styles.formField}>
-                  <span className={styles.formLabel}>Birth Place</span>
-                  <input
-                    type="text"
-                    className={inputClass('birthPlace')}
-                    value={editForm.birthPlace}
-                    onChange={(e) => setEditForm({ ...editForm, birthPlace: e.target.value })}
-                  />
-                  {fieldErrors.birthPlace && (
-                    <span className={styles.fieldError}>{fieldErrors.birthPlace}</span>
-                  )}
-                </label>
+                {textField('Birth Place', 'birthPlace')}
                 {/* biome-ignore lint/a11y/noLabelWithoutControl: QualifiedDateInput renders its own input elements */}
                 <label className={styles.formField}>
                   <span className={styles.formLabel}>Death Date</span>
@@ -582,30 +525,8 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
                     <span className={styles.fieldError}>{fieldErrors.deathDate}</span>
                   )}
                 </label>
-                <label className={styles.formField}>
-                  <span className={styles.formLabel}>Death Place</span>
-                  <input
-                    type="text"
-                    className={inputClass('deathPlace')}
-                    value={editForm.deathPlace}
-                    onChange={(e) => setEditForm({ ...editForm, deathPlace: e.target.value })}
-                  />
-                  {fieldErrors.deathPlace && (
-                    <span className={styles.fieldError}>{fieldErrors.deathPlace}</span>
-                  )}
-                </label>
-                <label className={styles.formField}>
-                  <span className={styles.formLabel}>Burial Place</span>
-                  <input
-                    type="text"
-                    className={inputClass('burialPlace')}
-                    value={editForm.burialPlace}
-                    onChange={(e) => setEditForm({ ...editForm, burialPlace: e.target.value })}
-                  />
-                  {fieldErrors.burialPlace && (
-                    <span className={styles.fieldError}>{fieldErrors.burialPlace}</span>
-                  )}
-                </label>
+                {textField('Death Place', 'deathPlace')}
+                {textField('Burial Place', 'burialPlace')}
                 <label className={styles.formField}>
                   <span className={styles.formLabel}>Biography</span>
                   <textarea
@@ -740,102 +661,53 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
 
       {visitedTabs.has('artifacts') && (
         <div style={{ display: tab === 'artifacts' ? undefined : 'none' }}>
-          <ArtifactsTab
-            personId={id}
-            person={person}
-            personName={`${person.firstName}${person.middleName ? ` ${person.middleName}` : ''} ${person.lastName}`}
-            relationships={relationships}
-            relatedPeople={relatedPeople}
-            onPersonUpdated={loadPersonOnly}
-          />
+          <Suspense>
+            <ArtifactsTab
+              personId={id}
+              person={person}
+              personName={`${person.firstName}${person.middleName ? ` ${person.middleName}` : ''} ${person.lastName}`}
+              relationships={relationships}
+              relatedPeople={relatedPeople}
+              onPersonUpdated={loadPersonOnly}
+            />
+          </Suspense>
         </div>
       )}
 
       {visitedTabs.has('wall') && (
         <div style={{ display: tab === 'wall' ? undefined : 'none' }}>
-          <WallTab personId={id} />
+          <Suspense><WallTab personId={id} /></Suspense>
         </div>
       )}
 
       {visitedTabs.has('issues') && (
         <div style={{ display: tab === 'issues' ? undefined : 'none' }}>
-          <IssuesTab personId={id} />
+          <Suspense><IssuesTab personId={id} /></Suspense>
         </div>
       )}
     </div>
   );
 }
 
-function Linkify({ text }: { text: string }) {
-  // Match URLs allowing balanced parentheses; only exclude semicolons
-  const urlRegex = /(https?:\/\/[^\s;]+)/g;
-  const parts = text.split(urlRegex);
-  return (
-    <>
-      {parts.map((part) =>
-        /^https?:\/\//.test(part) ? (
-          <a key={part} href={part} target="_blank" rel="noopener noreferrer">
-            {part}
-          </a>
-        ) : (
-          <span key={part}>{part}</span>
-        ),
-      )}
-    </>
-  );
-}
+const URL_REGEX = /(https?:\/\/[^\s;]+)/g;
 
 function DetailRow({ label, value, linkify }: { label: string; value: string; linkify?: boolean }) {
   return (
     <div className={styles.detailRow}>
       <span className={styles.detailLabel}>{label}</span>
       <span style={linkify ? { whiteSpace: 'pre-wrap', wordBreak: 'break-word' } : undefined}>
-        {linkify ? <Linkify text={value} /> : value}
+        {linkify
+          ? value.split(URL_REGEX).map((part) =>
+              /^https?:\/\//.test(part) ? (
+                <a key={part} href={part} target="_blank" rel="noopener noreferrer">{part}</a>
+              ) : (
+                <span key={part}>{part}</span>
+              ),
+            )
+          : value}
       </span>
     </div>
   );
-}
-
-const MONTH_NAMES = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
-
-const QUALIFIER_LABELS: Record<string, string> = {
-  ABT: 'About',
-  BEF: 'Before',
-  AFT: 'After',
-  EST: 'About',
-  CAL: 'About',
-};
-
-// Format a stored date (YYYY, YYYY-MM, or YYYY-MM-DD) for display
-function formatDate(date: string, qualifier?: DateQualifier): string {
-  const parts = date.split('-');
-  let formatted: string;
-  if (parts.length === 1) formatted = parts[0] ?? '';
-  else if (parts.length === 2) {
-    const monthIdx = Number.parseInt(parts[1] ?? '', 10) - 1;
-    formatted = `${MONTH_NAMES[monthIdx]} ${parts[0]}`;
-  } else {
-    const monthIdx = Number.parseInt(parts[1] ?? '', 10) - 1;
-    formatted = `${Number.parseInt(parts[2] ?? '', 10)} ${MONTH_NAMES[monthIdx]} ${parts[0]}`;
-  }
-  if (qualifier) {
-    const label = QUALIFIER_LABELS[qualifier] || qualifier;
-    return `${label} ${formatted}`;
-  }
-  return formatted;
 }
 
 function RelationshipSection({
@@ -853,17 +725,7 @@ function RelationshipSection({
   title: string;
   relationships: Relationship[];
   getId: (r: Relationship) => string;
-  names: Record<
-    string,
-    {
-      name: string;
-      gender: string;
-      birthDate?: string;
-      birthDateQualifier?: string;
-      deathDate?: string;
-      deathDateQualifier?: string;
-    }
-  >;
+  names: RelatedPeopleMap;
   canEdit: boolean;
   confirmingDelete: string | null;
   onConfirmStart: (id: string) => void;
@@ -954,17 +816,7 @@ function SpouseSection({
 }: {
   spouses: Relationship[];
   personId: string;
-  names: Record<
-    string,
-    {
-      name: string;
-      gender: string;
-      birthDate?: string;
-      birthDateQualifier?: string;
-      deathDate?: string;
-      deathDateQualifier?: string;
-    }
-  >;
+  names: RelatedPeopleMap;
   canEdit: boolean;
   confirmingDelete: string | null;
   onConfirmStart: (id: string) => void;

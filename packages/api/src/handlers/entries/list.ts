@@ -5,7 +5,7 @@ import { errorResponse, successResponse } from '../../middleware/response';
 import { EntryService } from '../../services/entry.service';
 
 const service = new EntryService();
-const VALID_TYPES = new Set(['wall', 'issue', 'bug']);
+const VALID_ENTRY_TYPES: EntryType[] = ['wall', 'issue', 'bug'];
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
@@ -15,8 +15,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const params = event.queryStringParameters || {};
     const limit = params.limit ? Number.parseInt(params.limit, 10) : undefined;
     const cursor = params.cursor;
-    const type =
-      params.type && VALID_TYPES.has(params.type) ? (params.type as EntryType) : undefined;
+    const type = VALID_ENTRY_TYPES.find((t) => t === params.type);
     const result = await service.listByPerson(personId, limit, cursor, type);
     return successResponse(200, result);
   } catch (error) {

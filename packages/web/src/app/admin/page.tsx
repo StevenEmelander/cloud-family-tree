@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { formatRelativeDate } from '@/lib/date-utils';
+import { getErrorMessage } from '@/lib/errors';
 import { siteConfig } from '@/lib/site-config';
 import styles from './page.module.css';
 
@@ -34,7 +35,7 @@ export default function AdminPage() {
       const data = await api.listUsers();
       setUsers(data.users);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load users');
+      setError(getErrorMessage(err, 'Failed to load users'));
     } finally {
       setLoading(false);
     }
@@ -69,7 +70,7 @@ export default function AdminPage() {
       await api.approveUser(username);
       await loadUsers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to approve user');
+      setError(getErrorMessage(err, 'Failed to approve user'));
     }
   }
 
@@ -81,7 +82,7 @@ export default function AdminPage() {
       // Adjust page if we deleted the last item on the current page
       if (pagedUsers.length === 1 && page > 0) setPage(page - 1);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete user');
+      setError(getErrorMessage(err, 'Failed to delete user'));
     }
   }
 
@@ -90,7 +91,7 @@ export default function AdminPage() {
       await api.setUserRole(username, role);
       await loadUsers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to change role');
+      setError(getErrorMessage(err, 'Failed to change role'));
     }
   }
 
@@ -153,7 +154,7 @@ export default function AdminPage() {
       setImportResult(result);
       setSelectedFile(null);
     } catch (err) {
-      setImportError(err instanceof Error ? err.message : 'Import failed');
+      setImportError(getErrorMessage(err, 'Import failed'));
     } finally {
       setImporting(false);
     }
@@ -176,7 +177,7 @@ export default function AdminPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setImportError(err instanceof Error ? err.message : 'Export failed');
+      setImportError(getErrorMessage(err, 'Export failed'));
     } finally {
       setExporting(false);
     }
@@ -260,7 +261,7 @@ export default function AdminPage() {
                   <select
                     className={`${styles.roleSelect} ${getRoleSelectClass(u.role)}`}
                     value={u.role}
-                    disabled={u.userId === user?.email}
+                    disabled={u.email === user?.email}
                     onChange={(e) =>
                       handleRoleChange(u.userId, e.target.value as 'admin' | 'editor' | 'visitor')
                     }
@@ -269,11 +270,11 @@ export default function AdminPage() {
                     <option value="editor">Editor</option>
                     <option value="admin">Admin</option>
                   </select>
-                  {u.userId === user?.email && <span className={styles.selfLabel}>(You)</span>}
+                  {u.email === user?.email && <span className={styles.selfLabel}>(You)</span>}
                   <button
                     type="button"
                     className={styles.btnDelete}
-                    disabled={u.userId === user?.email}
+                    disabled={u.email === user?.email}
                     onClick={() => handleDelete(u.userId)}
                   >
                     Delete
