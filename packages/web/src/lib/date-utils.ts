@@ -13,9 +13,9 @@ export function formatRelativeDate(iso: string): string {
   return date.toLocaleDateString();
 }
 
-const MONTH_NAMES = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+const MONTH_FULL = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
 const QUALIFIER_LABELS: Record<string, string> = {
@@ -26,17 +26,28 @@ const QUALIFIER_LABELS: Record<string, string> = {
   CAL: 'About',
 };
 
-/** Formats a stored flex date (YYYY, YYYY-MM, or YYYY-MM-DD) for display */
-export function formatDate(date: string, qualifier?: string): string {
+/**
+ * Formats a stored flex date (YYYY, YYYY-MM, or YYYY-MM-DD) for display.
+ * @param format 'long' (default) → "January 15, 1920"; 'short' → "1/15/1920"
+ */
+export function formatDate(date: string, qualifier?: string, format: 'long' | 'short' = 'long'): string {
   const parts = date.split('-');
   let formatted: string;
-  if (parts.length === 1) formatted = parts[0] ?? '';
-  else if (parts.length === 2) {
+  if (parts.length === 1) {
+    formatted = parts[0] ?? '';
+  } else if (parts.length === 2) {
     const monthIdx = Number.parseInt(parts[1] ?? '', 10) - 1;
-    formatted = `${MONTH_NAMES[monthIdx] ?? parts[1]} ${parts[0]}`;
+    const monthNum = monthIdx + 1;
+    formatted = format === 'short'
+      ? `${monthNum}/${parts[0]}`
+      : `${MONTH_FULL[monthIdx] ?? parts[1]} ${parts[0]}`;
   } else {
     const monthIdx = Number.parseInt(parts[1] ?? '', 10) - 1;
-    formatted = `${Number.parseInt(parts[2] ?? '', 10)} ${MONTH_NAMES[monthIdx] ?? parts[1]} ${parts[0]}`;
+    const monthNum = monthIdx + 1;
+    const day = Number.parseInt(parts[2] ?? '', 10);
+    formatted = format === 'short'
+      ? `${monthNum}/${day}/${parts[0]}`
+      : `${MONTH_FULL[monthIdx] ?? parts[1]} ${day}, ${parts[0]}`;
   }
   if (qualifier) {
     const label = QUALIFIER_LABELS[qualifier] || qualifier;

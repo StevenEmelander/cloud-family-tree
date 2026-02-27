@@ -12,11 +12,13 @@ import type {
 import {
   API_CONFIG,
   ARTIFACT_CONFIG,
+  ARTIFACT_TYPE_TO_EVENT_TAG,
   createArtifactSchema,
   isoNow,
   updateArtifactSchema,
   validate,
 } from '@cloud-family-tree/shared';
+import type { PersonEvent } from '@cloud-family-tree/shared';
 import { v4 as uuid } from 'uuid';
 import { BucketNames, s3Client } from '../lib/s3';
 import { ForbiddenError, NotFoundError, ValidationError } from '../middleware/error-handler';
@@ -115,6 +117,10 @@ export class ArtifactService {
     }
 
     await this.artifactRepo.create(artifact);
+
+    // Auto-create event on the person for event-generating artifact types
+    await this.autoCreateEvent(data.personId, artifactId, artifact.artifactType, data.date, data.metadata);
+
     return artifact;
   }
 
@@ -173,6 +179,18 @@ export class ArtifactService {
       }
     }
 
+    // Sync auto-created events if date or metadata changed
+    if ('date' in input || 'metadata' in input) {
+      for (const assoc of associations) {
+        await this.syncArtifactEvent(
+          assoc.personId,
+          artifactId,
+          'date' in input ? (data.date ?? null) : undefined,
+          'metadata' in input ? (data.metadata ?? null) : undefined,
+        );
+      }
+    }
+
     return this.artifactRepo.findById(artifactId, personId) as Promise<Artifact>;
   }
 
@@ -220,9 +238,10 @@ export class ArtifactService {
       throw new ForbiddenError('You can only delete artifacts you uploaded');
     }
 
-    // Remove all association rows for this artifact
+    // Remove all association rows and auto-created events for this artifact
     const associations = await this.artifactRepo.findAllAssociations(artifactId);
     for (const assoc of associations) {
+      await this.removeArtifactEvent(assoc.personId, assoc.artifactId);
       await this.artifactRepo.delete(assoc.artifactId, assoc.personId);
     }
 
@@ -266,11 +285,90 @@ export class ArtifactService {
         isPrimary: false, // only the source person can have this as primary
       };
       await this.artifactRepo.create(association);
+
+      // Auto-create event on the target person
+      await this.autoCreateEvent(targetId, artifactId, source.artifactType, source.date, source.metadata);
     }
   }
 
   async disassociatePerson(artifactId: string, personId: string): Promise<void> {
+    await this.removeArtifactEvent(personId, artifactId);
     await this.artifactRepo.delete(artifactId, personId);
+  }
+
+  private async autoCreateEvent(
+    personId: string,
+    artifactId: string,
+    artifactType: string,
+    date?: string,
+    metadata?: Record<string, string>,
+  ): Promise<void> {
+    const eventTag = ARTIFACT_TYPE_TO_EVENT_TAG[artifactType];
+    if (!eventTag) return;
+
+    const person = await this.personRepo.findById(personId);
+    if (!person) return;
+
+    const events = person.events ?? [];
+    if (events.find((e) => e.artifactId === artifactId)) return;
+
+    const newEvent: PersonEvent = { type: eventTag, artifactId };
+    if (date) newEvent.date = date;
+    const place = metadata?.censusLocation ?? metadata?.portOfArrival ?? metadata?.place;
+    if (place) newEvent.place = place;
+
+    await this.personRepo.update(personId, {
+      events: [...events, newEvent],
+      updatedAt: isoNow(),
+    });
+  }
+
+  private async removeArtifactEvent(personId: string, artifactId: string): Promise<void> {
+    const person = await this.personRepo.findById(personId);
+    if (!person?.events) return;
+
+    const filtered = person.events.filter((e) => e.artifactId !== artifactId);
+    if (filtered.length === person.events.length) return;
+
+    await this.personRepo.update(personId, {
+      events: filtered.length > 0 ? filtered : undefined,
+      updatedAt: isoNow(),
+    });
+  }
+
+  private async syncArtifactEvent(
+    personId: string,
+    artifactId: string,
+    date?: string | null,
+    metadata?: Record<string, string> | null,
+  ): Promise<void> {
+    const person = await this.personRepo.findById(personId);
+    if (!person?.events) return;
+
+    const eventIdx = person.events.findIndex((e) => e.artifactId === artifactId);
+    if (eventIdx === -1) return;
+
+    const updated = [...person.events];
+    const evt = { ...updated[eventIdx]! };
+
+    if (date !== undefined) {
+      if (date === null || date === '') {
+        delete evt.date;
+      } else {
+        evt.date = date;
+      }
+    }
+
+    if (metadata !== undefined && metadata !== null) {
+      const place = metadata.censusLocation ?? metadata.portOfArrival ?? metadata.place;
+      if (place) evt.place = place;
+    }
+
+    updated[eventIdx] = evt;
+    await this.personRepo.update(personId, {
+      events: updated,
+      updatedAt: isoNow(),
+    });
   }
 
   async getAssociations(

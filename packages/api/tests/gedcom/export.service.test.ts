@@ -19,6 +19,22 @@ vi.mock('../../src/repositories/relationship.repository', () => ({
   }),
 }));
 
+vi.mock('../../src/repositories/source.repository', () => ({
+  SourceRepository: vi.fn().mockImplementation(function () {
+    return {
+      findAll: vi.fn().mockResolvedValue([]),
+    };
+  }),
+}));
+
+vi.mock('../../src/repositories/artifact.repository', () => ({
+  ArtifactRepository: vi.fn().mockImplementation(function () {
+    return {
+      findByPerson: vi.fn().mockResolvedValue({ items: [] }),
+    };
+  }),
+}));
+
 function makePerson(overrides: Partial<Person> = {}): Person {
   return {
     personId: 'ind-1',
@@ -52,11 +68,13 @@ describe('GedcomExportService', () => {
     const result = await service.export();
     expect(result.peopleExported).toBe(0);
     expect(result.relationshipsExported).toBe(0);
+    expect(result.sourcesExported).toBe(0);
+    expect(result.artifactsExported).toBe(0);
     expect(result.gedcomContent).toContain('0 HEAD');
     expect(result.gedcomContent).toContain('0 TRLR');
   });
 
-  it('exports people with GEDCOM format', async () => {
+  it('exports people with GEDCOM 7 format', async () => {
     const john = makePerson({
       personId: 'ind-1',
       firstName: 'John',
@@ -113,14 +131,13 @@ describe('GedcomExportService', () => {
     expect(result.gedcomContent).toContain('2 DATE 10 SEP 1985');
   });
 
-  it('includes GEDC version header', async () => {
+  it('includes GEDCOM 7 version header', async () => {
     personRepo.iterateAll.mockImplementation(async function* () {
       // empty
     });
 
     const result = await service.export();
-    expect(result.gedcomContent).toContain('2 VERS 5.5.1');
-    expect(result.gedcomContent).toContain('2 FORM LINEAGE-LINKED');
-    expect(result.gedcomContent).toContain('1 CHAR UTF-8');
+    expect(result.gedcomContent).toContain('2 VERS 7.0');
+    expect(result.gedcomContent).toContain('2 VERS 0.2.0');
   });
 });

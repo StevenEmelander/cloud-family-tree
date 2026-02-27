@@ -7,6 +7,7 @@ export interface Tables {
   relationships: dynamodb.Table;
   artifacts: dynamodb.Table;
   entries: dynamodb.Table;
+  sources: dynamodb.Table;
 }
 
 export class DatabaseStack extends cdk.Stack {
@@ -90,12 +91,30 @@ export class DatabaseStack extends cdk.Stack {
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
-    this.tables = { people, relationships, artifacts, entries };
+    // Sources table
+    const sources = new dynamodb.Table(this, 'SourcesTable', {
+      partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
+      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+    });
+
+    sources.addGlobalSecondaryIndex({
+      indexName: 'TitleIndex',
+      partitionKey: { name: 'GSI1PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'GSI1SK', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    this.tables = { people, relationships, artifacts, entries, sources };
 
     // Outputs
     new cdk.CfnOutput(this, 'PeopleTableName', { value: people.tableName });
     new cdk.CfnOutput(this, 'RelationshipsTableName', { value: relationships.tableName });
     new cdk.CfnOutput(this, 'ArtifactsTableName', { value: artifacts.tableName });
     new cdk.CfnOutput(this, 'EntriesTableName', { value: entries.tableName });
+    new cdk.CfnOutput(this, 'SourcesTableName', { value: sources.tableName });
   }
 }

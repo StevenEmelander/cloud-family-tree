@@ -58,8 +58,17 @@ audit_gedcom.js
 deploy-lambdas.mjs
 scripts/gedcom-v6.js
 
+# Data processing scripts and workspaces (contain infra IDs, personal genealogy data)
+data/*.py
+data/*.sh
+data/*work/
+data/*_ws/
+
 # Private docs directory
 docs/
+
+# Claude Code
+.claude/
 
 # Lockfiles (project uses pnpm)
 package-lock.json

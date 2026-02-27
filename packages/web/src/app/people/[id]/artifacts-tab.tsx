@@ -1153,11 +1153,10 @@ export default function ArtifactsTab({
     return true;
   });
 
-  if (loading) return <p className={styles.status}>Loading artifacts...</p>;
-  if (error) return <p className={styles.error}>{error}</p>;
-
   return (
     <div className={styles.container}>
+      {error && <p className={styles.error}>{error}</p>}
+
       {/* Upload section */}
       {canEdit && (
         <div className={styles.uploadSection}>
@@ -1705,35 +1704,39 @@ export default function ArtifactsTab({
         </div>
       )}
 
-      {/* Filter tabs */}
-      {artifacts.length > 0 && (
-        <div className={styles.filterTabs}>
-          {(
-            [
-              ['all', 'All'],
-              ['graves', 'Grave'],
-              ['records', 'Records'],
-              ['photos', 'Photos'],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              className={`${styles.filterTab} ${filter === key ? styles.filterTabActive : ''}`}
-              onClick={() => setFilter(key)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Gallery grid */}
-      {filtered.length === 0 ? (
-        <p className={styles.empty}>
-          {artifacts.length === 0 ? 'No artifacts yet.' : 'No artifacts match this filter.'}
-        </p>
+      {loading ? (
+        <p className={styles.status}>Loading artifacts...</p>
       ) : (
+        <>
+          {/* Filter tabs */}
+          {artifacts.length > 0 && (
+            <div className={styles.filterTabs}>
+              {(
+                [
+                  ['all', 'All'],
+                  ['graves', 'Grave'],
+                  ['records', 'Records'],
+                  ['photos', 'Photos'],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`${styles.filterTab} ${filter === key ? styles.filterTabActive : ''}`}
+                  onClick={() => setFilter(key)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Gallery grid */}
+          {filtered.length === 0 ? (
+            <p className={styles.empty}>
+              {artifacts.length === 0 ? 'No artifacts yet.' : 'No artifacts match this filter.'}
+            </p>
+          ) : (
         <div className={styles.grid}>
           {filtered.map((artifact) => (
             <div key={`${artifact.artifactId}-${artifact.personId}`} className={styles.card}>
@@ -1850,6 +1853,8 @@ export default function ArtifactsTab({
             </div>
           ))}
         </div>
+          )}
+        </>
       )}
 
       {/* Lightbox overlay */}

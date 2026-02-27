@@ -556,3 +556,378 @@
 .addEntryBtn:hover {
   background: var(--color-primary-dark);
 }
+
+/* Alternate Names */
+
+.altNameList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+}
+
+.altNameItem {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.altNameType {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-secondary);
+  min-width: 6rem;
+  flex-shrink: 0;
+}
+
+.altNameValue {
+  color: var(--color-fg);
+}
+
+/* Events */
+
+.eventList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+}
+
+.eventItem {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.eventType {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-secondary);
+  min-width: 6rem;
+  flex-shrink: 0;
+}
+
+.eventDetail {
+  color: var(--color-fg);
+}
+
+/* Source icon button (inline in DetailRow) */
+
+.sourceIconWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.25rem;
+  flex-shrink: 0;
+}
+
+.sourceIconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0.125rem;
+  cursor: pointer;
+  color: var(--color-primary);
+  opacity: 0.6;
+  transition: opacity 0.15s;
+  border-radius: 2px;
+}
+
+.sourceIconBtn:hover {
+  opacity: 1;
+}
+
+.sourcePopover {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  min-width: 200px;
+  max-width: 320px;
+  padding: 0.5rem;
+}
+
+.sourcePopoverTitle {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.375rem;
+}
+
+.sourcePopoverItem {
+  font-size: 0.8125rem;
+  padding: 0.25rem 0;
+  line-height: 1.3;
+}
+
+.sourcePopoverItem a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.sourcePopoverItem a:hover {
+  text-decoration: underline;
+}
+
+.sourcePopoverPage {
+  font-size: 0.75rem;
+  color: var(--color-secondary);
+}
+
+/* Citations (bottom general section) */
+
+.citationsSection {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.citationsLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-secondary);
+}
+
+.citationBadge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.125rem;
+  font-size: 0.75rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  color: var(--color-fg);
+}
+
+.citationBadge a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.citationBadge a:hover {
+  text-decoration: underline;
+}
+
+.citationPage {
+  color: var(--color-secondary);
+}
+
+/* Events Editor */
+
+.eventsEditor {
+  margin-top: 0.5rem;
+}
+
+.eventsEditorHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.btnAddEvent {
+  padding: 0.25rem 0.625rem;
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btnAddEvent:hover {
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.eventBlock {
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius);
+  padding: 0.625rem;
+  margin-bottom: 0.5rem;
+  background: var(--color-bg, #fff);
+}
+
+.eventBlockHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-bottom: 0.5rem;
+}
+
+.eventBlockHeader select {
+  flex: 1;
+}
+
+.eventBlockField {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.375rem;
+}
+
+.eventBlockField input,
+.eventBlockField select {
+  flex: 1;
+  min-width: 0;
+}
+
+.eventBlockField:last-child {
+  margin-bottom: 0;
+}
+
+.eventFieldLabel {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary, #6b7280);
+  min-width: 3rem;
+  flex-shrink: 0;
+}
+
+.btnRemoveEvent {
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  color: #dc2626;
+  border: 1px solid #dc2626;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.btnRemoveEvent:hover {
+  background: #fef2f2;
+}
+
+.artifactLinkedType {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary, #6b7280);
+  background: var(--color-bg-tertiary, #f3f4f6);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.artifactBadge {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+/* Alternate Name Editor Row */
+
+.altNameRow {
+  display: grid;
+  grid-template-columns: 9rem 1fr 1fr auto;
+  gap: 0.375rem;
+  margin-bottom: 0.375rem;
+  align-items: center;
+}
+
+/* Citation Editor Row */
+
+.citationRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.375rem;
+  margin-bottom: 0.375rem;
+  align-items: center;
+}
+
+@media (max-width: 600px) {
+  .eventBlockField {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .altNameRow {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .altNameRow select {
+    grid-column: 1 / -1;
+  }
+
+  .citationRow {
+    grid-template-columns: 1fr;
+  }
+
+  .btnRemoveEvent {
+    justify-self: end;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 1rem 0.75rem;
+  }
+
+  .profileHeader h1 {
+    font-size: 1.375rem;
+  }
+
+  .detailsCard {
+    padding: 1rem;
+  }
+
+  .detailRow {
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .detailLabel {
+    min-width: unset;
+    font-size: 0.75rem;
+  }
+
+  .relLink {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.125rem;
+    padding: 0.625rem 0.75rem;
+  }
+
+  .relLifespan {
+    white-space: normal;
+  }
+
+  .spouseMetaGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .altNameType,
+  .eventType {
+    min-width: 4.5rem;
+    font-size: 0.6875rem;
+  }
+
+  .altNameItem,
+  .eventItem {
+    flex-wrap: wrap;
+  }
+
+  .tab {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+}

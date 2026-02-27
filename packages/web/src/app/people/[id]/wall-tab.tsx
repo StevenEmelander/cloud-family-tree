@@ -116,8 +116,6 @@ export default function WallTab({ personId }: { personId: string }) {
     return entry.authorId === user.userId || user.role === 'editors' || isAdmin;
   }
 
-  if (loading) return <p>Loading entries...</p>;
-
   return (
     <div>
       {error && <p className={styles.error}>{error}</p>}
@@ -164,7 +162,9 @@ export default function WallTab({ personId }: { personId: string }) {
         </div>
       )}
 
-      {entries.length === 0 ? (
+      {loading ? (
+        <p>Loading entries...</p>
+      ) : entries.length === 0 ? (
         <p className={styles.emptyRel}>No entries yet. Be the first to contribute!</p>
       ) : (
         <div className={styles.entryList}>

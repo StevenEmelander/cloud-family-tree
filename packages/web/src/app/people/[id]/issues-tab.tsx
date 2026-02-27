@@ -79,8 +79,6 @@ export default function IssuesTab({ personId }: { personId: string }) {
     return issue.authorId === user.userId || isEditor;
   }
 
-  if (loading) return <p>Loading issues...</p>;
-
   return (
     <div>
       {error && <p className={styles.error}>{error}</p>}
@@ -132,7 +130,9 @@ export default function IssuesTab({ personId }: { personId: string }) {
         </div>
       )}
 
-      {issues.length === 0 ? (
+      {loading ? (
+        <p>Loading issues...</p>
+      ) : issues.length === 0 ? (
         <p className={styles.emptyRel}>No issues reported for this person.</p>
       ) : (
         <div className={styles.entryList}>

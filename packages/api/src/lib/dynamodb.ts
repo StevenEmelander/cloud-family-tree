@@ -15,4 +15,5 @@ export const TableNames = {
   Relationships: process.env.RELATIONSHIPS_TABLE_NAME ?? '',
   Artifacts: process.env.ARTIFACTS_TABLE_NAME ?? '',
   Entries: process.env.ENTRIES_TABLE_NAME ?? '',
+  Sources: process.env.SOURCES_TABLE_NAME ?? '',
 };

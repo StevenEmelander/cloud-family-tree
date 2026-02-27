@@ -26,6 +26,7 @@ export default function AdminPage() {
   const [importResult, setImportResult] = useState<GedcomImportResult | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [exportingGedzip, setExportingGedzip] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -112,8 +113,8 @@ export default function AdminPage() {
 
   function handleFileSelect(file: File) {
     const name = file.name.toLowerCase();
-    if (!name.endsWith('.ged') && !name.endsWith('.gedcom')) {
-      setImportError('Please select a valid GEDCOM file (.ged or .gedcom)');
+    if (!name.endsWith('.ged') && !name.endsWith('.gedcom') && !name.endsWith('.gdz')) {
+      setImportError('Please select a valid GEDCOM file (.ged, .gedcom, or .gdz)');
       return;
     }
     setSelectedFile(file);
@@ -149,8 +150,21 @@ export default function AdminPage() {
     setImportError(null);
     setImportResult(null);
     try {
-      const content = await selectedFile.text();
-      const result = await api.importGedcom(content);
+      let result: GedcomImportResult;
+      if (selectedFile.name.toLowerCase().endsWith('.gdz')) {
+        // GEDZIP: upload to S3 via presigned URL, then trigger import
+        const { s3Key, uploadUrl } = await api.getGedzipUploadUrl();
+        const fileBytes = await selectedFile.arrayBuffer();
+        await fetch(uploadUrl, {
+          method: 'PUT',
+          body: fileBytes,
+          headers: { 'Content-Type': 'application/zip' },
+        });
+        result = await api.importGedzip(s3Key);
+      } else {
+        const content = await selectedFile.text();
+        result = await api.importGedcom(content);
+      }
       setImportResult(result);
       setSelectedFile(null);
     } catch (err) {
@@ -180,6 +194,21 @@ export default function AdminPage() {
       setImportError(getErrorMessage(err, 'Export failed'));
     } finally {
       setExporting(false);
+    }
+  }
+
+  async function handleExportGedzip() {
+    setExportingGedzip(true);
+    try {
+      const result = await api.exportGedzip();
+      const a = document.createElement('a');
+      a.href = result.downloadUrl;
+      a.download = `${siteConfig.familyName.toLowerCase()}-family-${new Date().toISOString().slice(0, 10)}.gdz`;
+      a.click();
+    } catch (err) {
+      setImportError(getErrorMessage(err, 'GEDZIP export failed'));
+    } finally {
+      setExportingGedzip(false);
     }
   }
 
@@ -325,8 +354,8 @@ export default function AdminPage() {
         <div className={styles.gedcomCard}>
           <h3 className={styles.gedcomLabel}>Import GEDCOM</h3>
           <p className={styles.gedcomDesc}>
-            Upload a GEDCOM (.ged) file to add people and relationships to the tree. Existing data
-            will not be replaced.
+            Upload a GEDCOM (.ged) or GEDZIP (.gdz) file to add people, relationships, sources, and
+            photos to the tree. Existing data will not be replaced.
           </p>
 
           {!selectedFile && !importing && (
@@ -343,12 +372,12 @@ export default function AdminPage() {
             >
               <div className={styles.dropZoneIcon}>&#x1F4C1;</div>
               <div className={styles.dropZoneText}>
-                Drag and drop a .ged file here, or click to browse
+                Drag and drop a .ged or .gdz file here, or click to browse
               </div>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".ged,.gedcom"
+                accept=".ged,.gedcom,.gdz"
                 onChange={handleFileInputChange}
                 hidden
               />
@@ -386,19 +415,31 @@ export default function AdminPage() {
 
         {/* Export Card */}
         <div className={styles.gedcomCard}>
-          <h3 className={styles.gedcomLabel}>Export GEDCOM</h3>
+          <h3 className={styles.gedcomLabel}>Export Family Tree</h3>
           <p className={styles.gedcomDesc}>
-            Download all family tree data as a standard GEDCOM file for backup or use in other
-            genealogy software.
+            Download all family tree data for backup or use in other genealogy software.
           </p>
-          <button
-            type="button"
-            className={styles.btnExport}
-            onClick={handleExport}
-            disabled={exporting}
-          >
-            {exporting ? 'Preparing download...' : 'Download GEDCOM'}
-          </button>
+          <div className={styles.exportButtons}>
+            <button
+              type="button"
+              className={styles.btnExport}
+              onClick={handleExport}
+              disabled={exporting || exportingGedzip}
+            >
+              {exporting ? 'Preparing...' : 'Download GEDCOM'}
+            </button>
+            <button
+              type="button"
+              className={styles.btnExport}
+              onClick={handleExportGedzip}
+              disabled={exporting || exportingGedzip}
+            >
+              {exportingGedzip ? 'Preparing...' : 'Download GEDZIP'}
+            </button>
+          </div>
+          <p className={styles.exportHint}>
+            GEDZIP includes photos and media files. GEDCOM is data only.
+          </p>
         </div>
       </div>
 
@@ -431,6 +472,24 @@ export default function AdminPage() {
               <div className={styles.resultStat}>
                 <span className={styles.resultNumber}>{importResult.relationshipsSkipped}</span>
                 <span className={styles.resultLabel}>Relationships existed</span>
+              </div>
+            )}
+            {importResult.sourcesAdded > 0 && (
+              <div className={styles.resultStat}>
+                <span className={styles.resultNumber}>{importResult.sourcesAdded}</span>
+                <span className={styles.resultLabel}>Sources added</span>
+              </div>
+            )}
+            {importResult.artifactsAdded > 0 && (
+              <div className={styles.resultStat}>
+                <span className={styles.resultNumber}>{importResult.artifactsAdded}</span>
+                <span className={styles.resultLabel}>Photos added</span>
+              </div>
+            )}
+            {importResult.artifactsSkipped > 0 && (
+              <div className={styles.resultStat}>
+                <span className={styles.resultNumber}>{importResult.artifactsSkipped}</span>
+                <span className={styles.resultLabel}>Photos skipped</span>
               </div>
             )}
           </div>

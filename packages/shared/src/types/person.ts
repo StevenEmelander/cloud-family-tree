@@ -1,3 +1,5 @@
+import type { AlternateName, Citation, PersonEvent } from './source';
+
 export enum Gender {
   MALE = 'MALE',
   FEMALE = 'FEMALE',
@@ -27,6 +29,12 @@ export interface Person {
   burialPlace?: string;
   gender: Gender;
   biography?: string;
+  suffix?: string;
+  prefix?: string;
+  nickname?: string;
+  alternateNames?: AlternateName[];
+  events?: PersonEvent[];
+  citations?: Citation[];
   profilePhotoS3Key?: string;
   gedcomId?: string; // GEDCOM pointer (e.g. @I137@) for re-import matching
   createdAt: string; // ISO timestamp
@@ -46,6 +54,12 @@ export interface CreatePersonInput {
   burialPlace?: string;
   gender: Gender;
   biography?: string;
+  suffix?: string;
+  prefix?: string;
+  nickname?: string;
+  alternateNames?: AlternateName[];
+  events?: PersonEvent[];
+  citations?: Citation[];
 }
 
 export interface UpdatePersonInput {
@@ -61,5 +75,11 @@ export interface UpdatePersonInput {
   burialPlace?: string;
   gender?: Gender;
   biography?: string;
+  suffix?: string;
+  prefix?: string;
+  nickname?: string;
+  alternateNames?: AlternateName[];
+  events?: PersonEvent[];
+  citations?: Citation[];
   profilePhotoS3Key?: string;
 }

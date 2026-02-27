@@ -118,3 +118,19 @@
   color: var(--color-secondary);
   font-size: 0.875rem;
 }
+
+@media (max-width: 480px) {
+  .nodeName {
+    white-space: normal;
+    font-size: 0.75rem;
+    padding: 0 0.25rem;
+  }
+
+  .nodeLabel {
+    font-size: 0.5625rem;
+  }
+
+  .marriageBox {
+    font-size: 0.5625rem;
+  }
+}

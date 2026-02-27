@@ -38,6 +38,7 @@ export class ApiStack extends cdk.Stack {
       ARTIFACTS_TABLE_NAME: tables.artifacts.tableName,
       PHOTOS_BUCKET_NAME: photosBucket.bucketName,
       ENTRIES_TABLE_NAME: tables.entries.tableName,
+      SOURCES_TABLE_NAME: tables.sources.tableName,
       COGNITO_USER_POOL_ID: userPool.userPoolId,
       COGNITO_CLIENT_ID: userPoolClient.userPoolClientId,
       REQUIRE_AUTH_FOR_READ: String(config.access.requireAuthForRead),
@@ -71,6 +72,7 @@ export class ApiStack extends cdk.Stack {
       tables.relationships.grantReadWriteData(fn);
       tables.artifacts.grantReadWriteData(fn);
       tables.entries.grantReadWriteData(fn);
+      tables.sources.grantReadWriteData(fn);
       return fn;
     };
 
@@ -120,6 +122,16 @@ export class ApiStack extends cdk.Stack {
 
     const gedcomImportFn = createLambda('GedcomImport', 'handlers/gedcom/import', 1024, 300);
     const gedcomExportFn = createLambda('GedcomExport', 'handlers/gedcom/export', 512, 60);
+    const gedzipImportFn = createLambda('GedzipImport', 'handlers/gedcom/import-gedzip', 1024, 600);
+    const gedzipExportFn = createLambda('GedzipExport', 'handlers/gedcom/export-gedzip', 1024, 600);
+    const gedzipUploadUrlFn = createLambda('GedzipUploadUrl', 'handlers/gedcom/upload-gedzip-url');
+
+    // Source CRUD Lambdas
+    const createSourceFn = createLambda('CreateSource', 'handlers/sources/create');
+    const listSourcesFn = createLambda('ListSources', 'handlers/sources/list');
+    const getSourceFn = createLambda('GetSource', 'handlers/sources/get');
+    const updateSourceFn = createLambda('UpdateSource', 'handlers/sources/update');
+    const deleteSourceFn = createLambda('DeleteSource', 'handlers/sources/delete');
 
     // Admin user management Lambdas
     const listUsersFn = createLambda('ListUsers', 'handlers/admin/list-users');
@@ -164,6 +176,9 @@ export class ApiStack extends cdk.Stack {
     photosBucket.grantReadWrite(deleteArtifactFn);
     photosBucket.grantRead(getArtifactUrlFn);
     photosBucket.grantRead(getArtifactAssociationsFn);
+    photosBucket.grantReadWrite(gedzipImportFn);
+    photosBucket.grantReadWrite(gedzipExportFn);
+    photosBucket.grantReadWrite(gedzipUploadUrlFn);
 
     // CORS origins
     const allowedOrigins = config.domain.enabled
@@ -320,6 +335,25 @@ export class ApiStack extends cdk.Stack {
 
     const exportGedcom = tree.addResource('export-gedcom');
     exportGedcom.addMethod('GET', new apigateway.LambdaIntegration(gedcomExportFn));
+
+    const importGedzip = tree.addResource('import-gedzip');
+    importGedzip.addMethod('POST', new apigateway.LambdaIntegration(gedzipImportFn), authOpts);
+
+    const exportGedzip = tree.addResource('export-gedzip');
+    exportGedzip.addMethod('POST', new apigateway.LambdaIntegration(gedzipExportFn), authOpts);
+
+    const uploadGedzipUrl = tree.addResource('upload-gedzip');
+    uploadGedzipUrl.addMethod('POST', new apigateway.LambdaIntegration(gedzipUploadUrlFn), authOpts);
+
+    // Source routes
+    const sourcesResource = this.api.root.addResource('sources');
+    sourcesResource.addMethod('GET', new apigateway.LambdaIntegration(listSourcesFn));
+    sourcesResource.addMethod('POST', new apigateway.LambdaIntegration(createSourceFn), authOpts);
+
+    const sourceItem = sourcesResource.addResource('{id}');
+    sourceItem.addMethod('GET', new apigateway.LambdaIntegration(getSourceFn));
+    sourceItem.addMethod('PUT', new apigateway.LambdaIntegration(updateSourceFn), authOpts);
+    sourceItem.addMethod('DELETE', new apigateway.LambdaIntegration(deleteSourceFn), authOpts);
 
     // Admin routes
     const admin = this.api.root.addResource('admin');

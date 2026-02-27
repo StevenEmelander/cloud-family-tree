@@ -1,11 +1,13 @@
 'use client';
 
-import type { DateQualifier, Person, Relationship } from '@cloud-family-tree/shared';
+import type { AlternateName, Citation, DateQualifier, Person, PersonEvent, Relationship, Source } from '@cloud-family-tree/shared';
+import { AlternateNameType } from '@cloud-family-tree/shared';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { FlexDateInput } from '@/components/FlexDateInput';
 import { QualifiedDateInput } from '@/components/QualifiedDateInput';
+import { SourceSelector } from '@/components/SourceSelector';
 import { ApiValidationError, api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { canEditPeople } from '@/lib/auth-utils';
@@ -39,27 +41,55 @@ function toPersonNode(pid: string, people: RelatedPeopleMap) {
   };
 }
 
+interface EditEvent {
+  type: string;
+  detail: string;
+  date: string;
+  dateQualifier: string;
+  place: string;
+  artifactId?: string;
+  sourceId?: string;
+}
+
+interface EditCitation {
+  sourceId: string;
+  name: string;
+  url: string;
+}
+
+interface EditAlternateName {
+  type: string;
+  firstName: string;
+  lastName: string;
+}
+
 interface EditForm {
   firstName: string;
   middleName: string;
   lastName: string;
   gender: string;
-  birthDate: string;
-  birthDateQualifier: string;
-  birthPlace: string;
-  deathDate: string;
-  deathDateQualifier: string;
-  deathPlace: string;
-  burialPlace: string;
   biography: string;
+  events: EditEvent[];
+  citations: EditCitation[];
+  alternateNames: EditAlternateName[];
 }
 
 export default function PersonDetail({ id: paramId }: { id: string }) {
   const { user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const canEdit = canEditPeople(user);
 
   const [id, setId] = useState(paramId !== '_' && paramId !== 'new' ? paramId : '');
+
+  // Keep id in sync with URL for client-side navigation (static export SPA fallback)
+  useEffect(() => {
+    const segments = pathname.split('/');
+    const urlId = segments[segments.length - 1] || segments[segments.length - 2];
+    if (urlId && urlId !== '_' && urlId !== 'new' && urlId !== id) {
+      setId(urlId);
+    }
+  }, [pathname, id]);
   const [person, setPerson] = useState<Person | null>(null);
   const personRef = useRef<Person | null>(null);
   const [relationships, setRelationships] = useState<Relationship[]>([]);
@@ -74,10 +104,20 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
   >({});
   const [relLoaded, setRelLoaded] = useState(false);
   const [visitedTabs, setVisitedTabs] = useState<Set<Tab>>(new Set());
+  const [sourcesMap, setSourcesMap] = useState<Record<string, Source>>({});
+  const [allSources, setAllSources] = useState<Source[]>([]);
 
   const switchTab = useCallback((t: Tab) => {
     setTab(t);
-    setVisitedTabs((prev) => new Set(prev).add(t));
+    setVisitedTabs((prev) => {
+      const next = new Set(prev).add(t);
+      // Preload wall + issues together so switching between them is instant
+      if (t === 'wall' || t === 'issues') {
+        next.add('wall');
+        next.add('issues');
+      }
+      return next;
+    });
     const url = new URL(window.location.href);
     if (t === 'details') url.searchParams.delete('tab');
     else url.searchParams.set('tab', t);
@@ -91,14 +131,10 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
     middleName: '',
     lastName: '',
     gender: 'UNKNOWN',
-    birthDate: '',
-    birthDateQualifier: '',
-    birthPlace: '',
-    deathDate: '',
-    deathDateQualifier: '',
-    deathPlace: '',
-    burialPlace: '',
     biography: '',
+    events: [],
+    citations: [],
+    alternateNames: [],
   });
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -144,7 +180,7 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
       urlTab === 'wall' ||
       urlTab === 'issues'
     ) {
-      setTab(urlTab as Tab);
+      switchTab(urlTab as Tab);
     }
   }, [id, router, switchTab]);
 
@@ -205,6 +241,17 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
     setAddingRelationship(null);
     setRelLoaded(false);
     setVisitedTabs(new Set([initialTab]));
+    // Reset all person-specific state to prevent stale data flash
+    setPerson(null);
+    setRelationships([]);
+    setRelatedPeople({});
+    setOtherParent({});
+    setSpouseParents({});
+    setParentMarriages({});
+    setEditingSpouse(null);
+    setSpouseMetaForm({ marriageDate: '', marriagePlace: '', divorceDate: '', divorcePlace: '' });
+    setEditError(null);
+    setFieldErrors({});
     if (initialTab === 'details' || initialTab === 'tree') {
       loadData();
     } else {
@@ -219,25 +266,117 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
     }
   }, [tab, relLoaded, loading, person, loadData]);
 
+  // Load sources map when person has citations
+  useEffect(() => {
+    if (!person?.citations?.length) return;
+    const sourceIds = new Set(person.citations.map((c) => c.sourceId));
+    if (sourceIds.size === 0) return;
+    // Only load if we don't already have them
+    const missing = [...sourceIds].filter((sid) => !sourcesMap[sid]);
+    if (missing.length === 0) return;
+    api.listSources().then((res) => {
+      const map: Record<string, Source> = {};
+      for (const s of res.items) map[s.sourceId] = s;
+      setSourcesMap(map);
+    }).catch(() => { /* ignore - citations will show IDs instead of titles */ });
+  }, [person?.citations, sourcesMap]);
+
   function startEditing() {
     if (!person) return;
+    // Group citations by eventType so we can attach them to their events
+    const citationsByEvent: Record<string, Citation[]> = {};
+    for (const c of person.citations ?? []) {
+      const key = c.eventType || 'GENERAL';
+      if (!citationsByEvent[key]) citationsByEvent[key] = [];
+      citationsByEvent[key].push(c);
+    }
+    // Build core events from person top-level fields
+    const coreEvents: EditEvent[] = [];
+    if (person.birthDate || person.birthPlace) {
+      coreEvents.push({ type: 'BIRT', detail: '', date: person.birthDate || '', dateQualifier: person.birthDateQualifier || '', place: person.birthPlace || '', sourceId: citationsByEvent.BIRT?.[0]?.sourceId });
+    }
+    if (person.deathDate || person.deathPlace) {
+      coreEvents.push({ type: 'DEAT', detail: '', date: person.deathDate || '', dateQualifier: person.deathDateQualifier || '', place: person.deathPlace || '', sourceId: citationsByEvent.DEAT?.[0]?.sourceId });
+    }
+    if (person.burialPlace) {
+      coreEvents.push({ type: 'BURI', detail: '', date: '', dateQualifier: '', place: person.burialPlace || '', sourceId: citationsByEvent.BURI?.[0]?.sourceId });
+    }
+    // General citations (not tied to any event)
+    const generalCitations = (citationsByEvent.GENERAL ?? []).map((c) => {
+      const src = sourcesMap[c.sourceId];
+      return { sourceId: c.sourceId, name: src?.title || c.sourceId, url: src?.url || '' };
+    });
     setEditForm({
       firstName: person.firstName,
       middleName: person.middleName || '',
       lastName: person.lastName,
       gender: person.gender,
-      birthDate: person.birthDate || '',
-      birthDateQualifier: person.birthDateQualifier || '',
-      birthPlace: person.birthPlace || '',
-      deathDate: person.deathDate || '',
-      deathDateQualifier: person.deathDateQualifier || '',
-      deathPlace: person.deathPlace || '',
-      burialPlace: person.burialPlace || '',
       biography: person.biography || '',
+      events: [
+        ...coreEvents,
+        ...(person.events ?? []).map((e) => ({
+          type: e.type,
+          detail: e.detail || '',
+          date: e.date || '',
+          dateQualifier: e.dateQualifier || '',
+          place: e.place || '',
+          artifactId: e.artifactId,
+          sourceId: citationsByEvent[e.type]?.[0]?.sourceId,
+        })),
+      ],
+      citations: generalCitations,
+      alternateNames: (person.alternateNames ?? []).map((an) => ({
+        type: an.type,
+        firstName: an.firstName || '',
+        lastName: an.lastName || '',
+      })),
     });
     setEditError(null);
     setFieldErrors({});
     setEditing(true);
+    // Load all sources for the citation dropdown
+    if (allSources.length === 0) {
+      api.listSources().then((res) => {
+        setAllSources(res.items);
+        const map: Record<string, Source> = {};
+        for (const s of res.items) map[s.sourceId] = s;
+        setSourcesMap(map);
+      }).catch(() => { /* ignore */ });
+    }
+  }
+
+  async function buildCitations() {
+    const result: { sourceId: string; eventType?: string }[] = [];
+    // Event-level citations
+    for (const evt of editForm.events) {
+      if (evt.sourceId && evt.type) {
+        result.push({ sourceId: evt.sourceId, eventType: evt.type });
+      }
+    }
+    // General citations (person-level)
+    for (const c of editForm.citations) {
+      if (!c.name.trim()) continue;
+      let sid = c.sourceId;
+      const name = c.name.trim();
+      const url = c.url.trim() || undefined;
+      const existing = allSources.find((s) => s.title === name);
+      if (sid) {
+        const prev = sourcesMap[sid];
+        if (prev && (prev.title !== name || (prev.url || '') !== (url || ''))) {
+          await api.updateSource(sid, { title: name, url: url || '' });
+          setSourcesMap((m) => ({ ...m, [sid]: { ...prev, title: name, url } }));
+        }
+      } else if (existing) {
+        sid = existing.sourceId;
+      } else {
+        const created = await api.createSource({ title: name, ...(url && { url }) });
+        sid = created.sourceId;
+        setAllSources((prev) => [...prev, created]);
+        setSourcesMap((m) => ({ ...m, [created.sourceId]: created }));
+      }
+      result.push({ sourceId: sid, eventType: 'GENERAL' });
+    }
+    return result;
   }
 
   async function handleSave() {
@@ -253,19 +392,42 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
     setEditError(null);
     setFieldErrors({});
     try {
+      // Extract BIRT/DEAT/BURI from events back to top-level person fields
+      const birthEvt = editForm.events.find((e) => e.type === 'BIRT');
+      const deathEvt = editForm.events.find((e) => e.type === 'DEAT');
+      const buriEvt = editForm.events.find((e) => e.type === 'BURI');
+      const otherEvents = editForm.events.filter((e) => e.type && e.type !== 'BIRT' && e.type !== 'DEAT' && e.type !== 'BURI');
+
       const payload: Record<string, unknown> = {
         firstName: editForm.firstName.trim(),
         lastName: editForm.lastName.trim(),
         gender: editForm.gender,
         middleName: editForm.middleName.trim() || '',
-        birthDate: editForm.birthDate || '',
-        birthDateQualifier: editForm.birthDateQualifier || '',
-        birthPlace: editForm.birthPlace.trim() || '',
-        deathDate: editForm.deathDate || '',
-        deathDateQualifier: editForm.deathDateQualifier || '',
-        deathPlace: editForm.deathPlace.trim() || '',
-        burialPlace: editForm.burialPlace.trim() || '',
+        birthDate: birthEvt?.date || '',
+        birthDateQualifier: birthEvt?.dateQualifier || '',
+        birthPlace: birthEvt?.place.trim() || '',
+        deathDate: deathEvt?.date || '',
+        deathDateQualifier: deathEvt?.dateQualifier || '',
+        deathPlace: deathEvt?.place.trim() || '',
+        burialPlace: buriEvt?.place.trim() || '',
         biography: editForm.biography.trim() || '',
+        events: otherEvents
+          .map((e) => ({
+            type: e.type,
+            ...(e.detail.trim() && { detail: e.detail.trim() }),
+            ...(e.date && { date: e.date }),
+            ...(e.dateQualifier && { dateQualifier: e.dateQualifier }),
+            ...(e.place.trim() && { place: e.place.trim() }),
+            ...(e.artifactId && { artifactId: e.artifactId }),
+          })),
+        citations: await buildCitations(),
+        alternateNames: editForm.alternateNames
+          .filter((an) => an.type && (an.firstName.trim() || an.lastName.trim()))
+          .map((an) => ({
+            type: an.type as AlternateNameType,
+            ...(an.firstName.trim() && { firstName: an.firstName.trim() }),
+            ...(an.lastName.trim() && { lastName: an.lastName.trim() }),
+          })),
       };
       await api.updatePerson(id, payload);
       setEditing(false);
@@ -336,7 +498,7 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
     return `${styles.formInput}${fieldErrors[field] ? ` ${styles.formInputError}` : ''}`;
   }
 
-  const textField = (label: string, field: keyof EditForm, required?: boolean) => (
+  const textField = (label: string, field: Exclude<keyof EditForm, 'events' | 'citations' | 'alternateNames'>, required?: boolean) => (
     <label key={field} className={styles.formField}>
       <span className={styles.formLabel}>{label}{required ? ' *' : ''}</span>
       <input
@@ -445,6 +607,7 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
 
       {tab === 'tree' && (
         <Suspense><FamilyTree
+          key={id}
           personName={`${person.firstName}${person.middleName ? ` ${person.middleName}` : ''} ${person.lastName}`}
           personId={id}
           personGender={person.gender}
@@ -498,35 +661,6 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
                     <option value="UNKNOWN">Unknown</option>
                   </select>
                 </label>
-                {/* biome-ignore lint/a11y/noLabelWithoutControl: QualifiedDateInput renders its own input elements */}
-                <label className={styles.formField}>
-                  <span className={styles.formLabel}>Birth Date</span>
-                  <QualifiedDateInput
-                    qualifier={editForm.birthDateQualifier}
-                    onQualifierChange={(v) => setEditForm({ ...editForm, birthDateQualifier: v })}
-                    date={editForm.birthDate}
-                    onDateChange={(v) => setEditForm({ ...editForm, birthDate: v })}
-                  />
-                  {fieldErrors.birthDate && (
-                    <span className={styles.fieldError}>{fieldErrors.birthDate}</span>
-                  )}
-                </label>
-                {textField('Birth Place', 'birthPlace')}
-                {/* biome-ignore lint/a11y/noLabelWithoutControl: QualifiedDateInput renders its own input elements */}
-                <label className={styles.formField}>
-                  <span className={styles.formLabel}>Death Date</span>
-                  <QualifiedDateInput
-                    qualifier={editForm.deathDateQualifier}
-                    onQualifierChange={(v) => setEditForm({ ...editForm, deathDateQualifier: v })}
-                    date={editForm.deathDate}
-                    onDateChange={(v) => setEditForm({ ...editForm, deathDate: v })}
-                  />
-                  {fieldErrors.deathDate && (
-                    <span className={styles.fieldError}>{fieldErrors.deathDate}</span>
-                  )}
-                </label>
-                {textField('Death Place', 'deathPlace')}
-                {textField('Burial Place', 'burialPlace')}
                 <label className={styles.formField}>
                   <span className={styles.formLabel}>Biography</span>
                   <textarea
@@ -540,6 +674,258 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
                     <span className={styles.fieldError}>{fieldErrors.biography}</span>
                   )}
                 </label>
+
+                {/* Events editor */}
+                <div className={styles.eventsEditor}>
+                  <div className={styles.eventsEditorHeader}>
+                    <span className={styles.formLabel}>Events &amp; Attributes</span>
+                    <button
+                      type="button"
+                      className={styles.btnAddEvent}
+                      onClick={() =>
+                        setEditForm({
+                          ...editForm,
+                          events: [...editForm.events, { type: '', detail: '', date: '', dateQualifier: '', place: '' }],
+                        })
+                      }
+                    >
+                      + Add
+                    </button>
+                  </div>
+                  {editForm.events.map((evt, i) => (
+                    <div key={i} className={styles.eventBlock}>
+                      <div className={styles.eventBlockHeader}>
+                        {evt.artifactId ? (
+                          <span className={styles.artifactLinkedType}>
+                            {EVENT_TYPE_LABELS[evt.type] || evt.type}
+                          </span>
+                        ) : (
+                          <select
+                            className={styles.formSelect}
+                            value={evt.type}
+                            onChange={(e) => {
+                              const updated = [...editForm.events];
+                              updated[i] = { ...evt, type: e.target.value };
+                              setEditForm({ ...editForm, events: updated });
+                            }}
+                          >
+                            <option value="">Select type...</option>
+                            {Object.entries(EVENT_TYPE_LABELS).map(([key, label]) => (
+                              <option key={key} value={key}>
+                                {label}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                        {!evt.artifactId && (
+                          <button
+                            type="button"
+                            className={styles.btnRemoveEvent}
+                            onClick={() => {
+                              const updated = editForm.events.filter((_, j) => j !== i);
+                              setEditForm({ ...editForm, events: updated });
+                            }}
+                            title="Remove"
+                          >
+                            &times;
+                          </button>
+                        )}
+                      </div>
+                      {(EVENT_FIELDS[evt.type] ?? DEFAULT_EVENT_FIELDS).date && (
+                        /* biome-ignore lint/a11y/noLabelWithoutControl: QualifiedDateInput renders its own input elements */
+                        <label className={styles.eventBlockField}>
+                          <span className={styles.eventFieldLabel}>Date</span>
+                          <QualifiedDateInput
+                            qualifier={evt.dateQualifier}
+                            onQualifierChange={(v) => {
+                              const updated = [...editForm.events];
+                              updated[i] = { ...evt, dateQualifier: v };
+                              setEditForm({ ...editForm, events: updated });
+                            }}
+                            date={evt.date}
+                            onDateChange={(v) => {
+                              const updated = [...editForm.events];
+                              updated[i] = { ...evt, date: v };
+                              setEditForm({ ...editForm, events: updated });
+                            }}
+                          />
+                        </label>
+                      )}
+                      {(EVENT_FIELDS[evt.type] ?? DEFAULT_EVENT_FIELDS).place && (
+                        <label className={styles.eventBlockField}>
+                          <span className={styles.eventFieldLabel}>Place</span>
+                          <input
+                            type="text"
+                            className={styles.formInput}
+                            placeholder={(EVENT_FIELDS[evt.type] ?? DEFAULT_EVENT_FIELDS).place as string}
+                            value={evt.place}
+                            onChange={(e) => {
+                              const updated = [...editForm.events];
+                              updated[i] = { ...evt, place: e.target.value };
+                              setEditForm({ ...editForm, events: updated });
+                            }}
+                          />
+                        </label>
+                      )}
+                      {(EVENT_FIELDS[evt.type] ?? DEFAULT_EVENT_FIELDS).detail && (
+                        <label className={styles.eventBlockField}>
+                          <span className={styles.eventFieldLabel}>Detail</span>
+                          <input
+                            type="text"
+                            className={styles.formInput}
+                            placeholder={(EVENT_FIELDS[evt.type] ?? DEFAULT_EVENT_FIELDS).detail as string}
+                            value={evt.detail}
+                            onChange={(e) => {
+                              const updated = [...editForm.events];
+                              updated[i] = { ...evt, detail: e.target.value };
+                              setEditForm({ ...editForm, events: updated });
+                            }}
+                          />
+                        </label>
+                      )}
+                      <div className={styles.eventBlockField}>
+                        <span className={styles.eventFieldLabel}>Source</span>
+                        <SourceSelector
+                          sources={allSources}
+                          selectedSourceId={evt.sourceId || null}
+                          onSelect={(sid) => {
+                            const updated = [...editForm.events];
+                            updated[i] = { ...evt, sourceId: sid || undefined };
+                            setEditForm({ ...editForm, events: updated });
+                          }}
+                          onSourceCreated={(s) => setAllSources((prev) => [...prev, s])}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Alternate Names editor */}
+                <div className={styles.eventsEditor}>
+                  <div className={styles.eventsEditorHeader}>
+                    <span className={styles.formLabel}>Alternate Names</span>
+                    <button
+                      type="button"
+                      className={styles.btnAddEvent}
+                      onClick={() =>
+                        setEditForm({
+                          ...editForm,
+                          alternateNames: [...editForm.alternateNames, { type: '', firstName: '', lastName: '' }],
+                        })
+                      }
+                    >
+                      + Add
+                    </button>
+                  </div>
+                  {editForm.alternateNames.map((an, i) => (
+                    <div key={i} className={styles.altNameRow}>
+                      <select
+                        className={styles.formSelect}
+                        value={an.type}
+                        onChange={(e) => {
+                          const updated = [...editForm.alternateNames];
+                          updated[i] = { ...an, type: e.target.value };
+                          setEditForm({ ...editForm, alternateNames: updated });
+                        }}
+                      >
+                        <option value="">Select type...</option>
+                        {Object.values(AlternateNameType).map((t) => (
+                          <option key={t} value={t}>{NAME_TYPE_LABELS[t] || t}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        className={styles.formInput}
+                        placeholder="First Name"
+                        value={an.firstName}
+                        onChange={(e) => {
+                          const updated = [...editForm.alternateNames];
+                          updated[i] = { ...an, firstName: e.target.value };
+                          setEditForm({ ...editForm, alternateNames: updated });
+                        }}
+                      />
+                      <input
+                        type="text"
+                        className={styles.formInput}
+                        placeholder="Last Name"
+                        value={an.lastName}
+                        onChange={(e) => {
+                          const updated = [...editForm.alternateNames];
+                          updated[i] = { ...an, lastName: e.target.value };
+                          setEditForm({ ...editForm, alternateNames: updated });
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className={styles.btnRemoveEvent}
+                        onClick={() => {
+                          const updated = editForm.alternateNames.filter((_, j) => j !== i);
+                          setEditForm({ ...editForm, alternateNames: updated });
+                        }}
+                        title="Remove"
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Sources editor */}
+                <div className={styles.eventsEditor}>
+                  <div className={styles.eventsEditorHeader}>
+                    <span className={styles.formLabel}>Sources</span>
+                    <button
+                      type="button"
+                      className={styles.btnAddEvent}
+                      onClick={() =>
+                        setEditForm({
+                          ...editForm,
+                          citations: [...editForm.citations, { sourceId: '', name: '', url: '' }],
+                        })
+                      }
+                    >
+                      + Add
+                    </button>
+                  </div>
+                  {editForm.citations.map((cit, i) => (
+                    <div key={i} className={styles.citationRow}>
+                      <input
+                        type="text"
+                        className={styles.formInput}
+                        placeholder="Name"
+                        value={cit.name}
+                        onChange={(e) => {
+                          const updated = [...editForm.citations];
+                          updated[i] = { ...cit, name: e.target.value, sourceId: '' };
+                          setEditForm({ ...editForm, citations: updated });
+                        }}
+                      />
+                      <input
+                        type="text"
+                        className={styles.formInput}
+                        placeholder="URL (optional)"
+                        value={cit.url}
+                        onChange={(e) => {
+                          const updated = [...editForm.citations];
+                          updated[i] = { ...cit, url: e.target.value, sourceId: '' };
+                          setEditForm({ ...editForm, citations: updated });
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className={styles.btnRemoveEvent}
+                        onClick={() => {
+                          const updated = editForm.citations.filter((_, j) => j !== i);
+                          setEditForm({ ...editForm, citations: updated });
+                        }}
+                        title="Remove"
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
                 <div className={styles.formActions}>
                   <button
                     type="button"
@@ -564,23 +950,58 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
             <div className={styles.detailsCard}>
               <div className={styles.details}>
                 <DetailRow label="Gender" value={person.gender} />
-                {person.birthDate && (
-                  <DetailRow
-                    label="Born"
-                    value={`${formatDate(person.birthDate, person.birthDateQualifier)}${person.birthPlace ? `, ${person.birthPlace}` : ''}`}
-                  />
-                )}
-                {person.deathDate && (
-                  <DetailRow
-                    label="Died"
-                    value={`${formatDate(person.deathDate, person.deathDateQualifier)}${person.deathPlace ? `, ${person.deathPlace}` : ''}`}
-                  />
-                )}
-                {person.burialPlace && <DetailRow label="Buried" value={person.burialPlace} />}
                 {person.biography && (
                   <DetailRow label="Biography" value={person.biography} linkify />
                 )}
+                {(() => {
+                  const allEvents: { type: string; date?: string; dateQualifier?: string; place?: string; detail?: string; artifactId?: string }[] = [];
+                  if (person.birthDate || person.birthPlace) allEvents.push({ type: 'BIRT', date: person.birthDate, dateQualifier: person.birthDateQualifier, place: person.birthPlace });
+                  if (person.deathDate || person.deathPlace) allEvents.push({ type: 'DEAT', date: person.deathDate, dateQualifier: person.deathDateQualifier, place: person.deathPlace });
+                  if (person.burialPlace) allEvents.push({ type: 'BURI', place: person.burialPlace });
+                  if (person.events) allEvents.push(...person.events);
+                  // Track per-type index for matching eventIndex on citations
+                  const typeIndexMap: Record<string, number> = {};
+                  return allEvents.map((ev, i) => {
+                    const evIdx = (typeIndexMap[ev.type] ?? 0);
+                    typeIndexMap[ev.type] = evIdx + 1;
+                    const eventCitations = (person.citations ?? []).filter((c) => {
+                      if (c.eventType !== ev.type) return false;
+                      // If citation has an eventIndex, match it to the correct event instance
+                      if (c.eventIndex !== undefined && c.eventIndex !== null) return c.eventIndex === evIdx;
+                      return true; // legacy citations without eventIndex show on all events of that type
+                    });
+                    return (
+                      <DetailRow
+                        key={`${ev.type}-${i}`}
+                        label={formatEventType(ev.type)}
+                        value={[
+                          ev.date && formatDate(ev.date, ev.dateQualifier),
+                          ev.place,
+                          ev.detail,
+                        ]
+                          .filter(Boolean)
+                          .join(' — ')}
+                        citations={eventCitations.length > 0 ? eventCitations : undefined}
+                        sourcesMap={sourcesMap}
+                      />
+                    );
+                  });
+                })()}
+                {person.alternateNames && person.alternateNames.length > 0 &&
+                  person.alternateNames.map((an, i) => (
+                    <DetailRow
+                      key={`alt-${an.type}-${i}`}
+                      label={formatNameType(an.type)}
+                      value={[an.prefix, an.firstName, an.middleName, an.lastName, an.suffix]
+                        .filter(Boolean)
+                        .join(' ')}
+                    />
+                  ))
+                }
               </div>
+              {person.citations && person.citations.filter((c) => !c.eventType || c.eventType === 'GENERAL').length > 0 && (
+                <CitationsSection citations={person.citations.filter((c) => !c.eventType || c.eventType === 'GENERAL')} sourcesMap={sourcesMap} />
+              )}
             </div>
           )}
 
@@ -691,7 +1112,21 @@ export default function PersonDetail({ id: paramId }: { id: string }) {
 
 const URL_REGEX = /(https?:\/\/[^\s;]+)/g;
 
-function DetailRow({ label, value, linkify }: { label: string; value: string; linkify?: boolean }) {
+function DetailRow({ label, value, linkify, citations, sourcesMap }: { label: string; value: string; linkify?: boolean; citations?: Citation[]; sourcesMap?: Record<string, Source> }) {
+  const [showSources, setShowSources] = useState(false);
+  const popRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showSources) return;
+    function handleClick(e: MouseEvent) {
+      if (popRef.current && !popRef.current.contains(e.target as Node)) setShowSources(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showSources]);
+
+  const hasCitations = citations && citations.length > 0 && sourcesMap;
+
   return (
     <div className={styles.detailRow}>
       <span className={styles.detailLabel}>{label}</span>
@@ -706,6 +1141,40 @@ function DetailRow({ label, value, linkify }: { label: string; value: string; li
             )
           : value}
       </span>
+      {hasCitations && (
+        <div className={styles.sourceIconWrap} ref={popRef}>
+          <button
+            type="button"
+            className={styles.sourceIconBtn}
+            onClick={() => setShowSources(!showSources)}
+            title={`${citations.length} source${citations.length !== 1 ? 's' : ''}`}
+          >
+            <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14" aria-hidden="true">
+              <path d="M2 2a2 2 0 012-2h4.586A2 2 0 0110 .586L13.414 4A2 2 0 0114 5.414V14a2 2 0 01-2 2H4a2 2 0 01-2-2V2zm5 1a1 1 0 100 2h2a1 1 0 100-2H7zM5 7a1 1 0 000 2h6a1 1 0 100-2H5zm0 3a1 1 0 100 2h4a1 1 0 100-2H5z" />
+            </svg>
+          </button>
+          {showSources && (
+            <div className={styles.sourcePopover}>
+              <div className={styles.sourcePopoverTitle}>Sources</div>
+              {citations.map((c, ci) => {
+                const source = sourcesMap[c.sourceId];
+                const title = source?.title || c.sourceId;
+                const url = source?.url;
+                return (
+                  <div key={`${c.sourceId}-${ci}`} className={styles.sourcePopoverItem}>
+                    {url ? (
+                      <a href={url} target="_blank" rel="noopener noreferrer">{title}</a>
+                    ) : (
+                      <span>{title}</span>
+                    )}
+                    {c.page && <span className={styles.sourcePopoverPage}> — {c.page}</span>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -1008,5 +1477,127 @@ function SpouseSection({
         <p className={styles.emptyRel}>No spouses recorded.</p>
       )}
     </section>
+  );
+}
+
+const NAME_TYPE_LABELS: Record<string, string> = {
+  AKA: 'Also Known As',
+  BIRTH: 'Birth Name',
+  MAIDEN: 'Maiden Name',
+  MARRIED: 'Married Name',
+  PROFESSIONAL: 'Professional Name',
+  IMMIGRANT: 'Immigrant Name',
+  OTHER: 'Other',
+};
+
+function formatNameType(type: string): string {
+  return NAME_TYPE_LABELS[type] || type;
+}
+
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  BIRT: 'Birth',
+  DEAT: 'Death',
+  BURI: 'Burial',
+  CHR: 'Christening',
+  CREM: 'Cremation',
+  RESI: 'Residence',
+  OCCU: 'Occupation',
+  EDUC: 'Education',
+  IMMI: 'Immigration',
+  EMIG: 'Emigration',
+  CENS: 'Census',
+  RELI: 'Religion',
+  NATU: 'Naturalization',
+  MILI: 'Military Service',
+  GRAD: 'Graduation',
+  RETI: 'Retirement',
+  WILL: 'Will',
+  PROB: 'Probate',
+  BAPM: 'Baptism',
+  BARM: 'Bar Mitzvah',
+  BASM: 'Bas Mitzvah',
+  CONF: 'Confirmation',
+  ORDN: 'Ordination',
+  ADOP: 'Adoption',
+  FCOM: 'First Communion',
+  DSCR: 'Physical Description',
+  NATI: 'Nationality',
+  TITL: 'Title',
+  EVEN: 'Event',
+  FACT: 'Fact',
+};
+
+interface EventFieldConfig {
+  date?: boolean;
+  place?: string; // placeholder text, or false-y to hide
+  detail?: string; // placeholder text, or false-y to hide
+}
+
+const EVENT_FIELDS: Record<string, EventFieldConfig> = {
+  BIRT: { date: true, place: 'Birth place' },
+  DEAT: { date: true, place: 'Death place' },
+  BURI: { date: true, place: 'Burial place' },
+  CHR:  { date: true, place: 'Church / Location' },
+  CREM: { date: true, place: 'Location' },
+  RESI: { date: true, place: 'Address' },
+  OCCU: { date: true, detail: 'Job title' },
+  EDUC: { date: true, place: 'School / Institution', detail: 'Degree / Field' },
+  IMMI: { date: true, place: 'Destination' },
+  EMIG: { date: true, place: 'Departed from' },
+  CENS: { date: true, place: 'Location' },
+  RELI: { detail: 'Denomination' },
+  NATU: { date: true, place: 'Court / Location' },
+  MILI: { date: true, detail: 'Branch / Rank' },
+  GRAD: { date: true, place: 'School', detail: 'Degree' },
+  RETI: { date: true },
+  WILL: { date: true },
+  PROB: { date: true, place: 'Court' },
+  BAPM: { date: true, place: 'Church / Location' },
+  BARM: { date: true, place: 'Synagogue / Location' },
+  BASM: { date: true, place: 'Synagogue / Location' },
+  CONF: { date: true, place: 'Church / Location' },
+  ORDN: { date: true, place: 'Location' },
+  ADOP: { date: true, place: 'Location' },
+  FCOM: { date: true, place: 'Church / Location' },
+  DSCR: { detail: 'Description' },
+  NATI: { detail: 'Nationality' },
+  TITL: { detail: 'Title' },
+  EVEN: { date: true, place: 'Place', detail: 'Description' },
+  FACT: { detail: 'Value' },
+};
+
+const DEFAULT_EVENT_FIELDS: EventFieldConfig = { date: true, place: 'Place', detail: 'Detail' };
+
+function formatEventType(type: string): string {
+  return EVENT_TYPE_LABELS[type] || type;
+}
+
+function CitationsSection({
+  citations,
+  sourcesMap,
+}: {
+  citations: Citation[];
+  sourcesMap: Record<string, Source>;
+}) {
+  return (
+    <div className={styles.citationsSection}>
+      <span className={styles.citationsLabel}>Sources:</span>
+      {citations.map((c, i) => {
+        const source = sourcesMap[c.sourceId];
+        const title = source?.title || c.sourceId;
+        const url = source?.url;
+        return (
+          <span key={`${c.sourceId}-${i}`} className={styles.citationBadge}>
+            {url ? (
+              <a href={url} target="_blank" rel="noopener noreferrer">
+                {title}
+              </a>
+            ) : (
+              title
+            )}
+          </span>
+        );
+      })}
+    </div>
   );
 }

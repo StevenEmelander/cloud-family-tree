@@ -5,6 +5,7 @@ export const GSI_NAMES = {
   RELATIONSHIPS_INVERSE_PERSON_INDEX: 'InversePersonIndex',
   ARTIFACT_PERSON_INDEX: 'PersonArtifactsIndex',
   ENTRIES_PERSON_INDEX: 'PersonEntriesIndex',
+  SOURCES_TITLE_INDEX: 'TitleIndex',
 } as const;
 
 // DynamoDB Entity Prefixes for composite keys
@@ -18,11 +19,14 @@ export const ENTITY_PREFIX = {
   UPLOADED: 'UPLOADED',
   METADATA: 'METADATA',
   ENTRY: 'ENTRY',
+  SOURCE: 'SOURCE',
+  TITLE: 'TITLE',
 } as const;
 
 // API Configuration
 export const API_CONFIG = {
   MAX_GEDCOM_FILE_SIZE_MB: 10,
+  MAX_GEDZIP_FILE_SIZE_MB: 200,
   MAX_ARTIFACT_FILE_SIZE_MB: 5,
   PRESIGNED_URL_EXPIRY_SECONDS: 300, // 5 minutes
   PAGINATION_DEFAULT_LIMIT: 100,
@@ -30,6 +34,13 @@ export const API_CONFIG = {
   MAX_ANCESTOR_DEPTH: 20,
   MAX_DESCENDANT_DEPTH: 20,
 } as const;
+
+// Maps ArtifactType to GEDCOM event tag for auto-event creation on linked persons
+export const ARTIFACT_TYPE_TO_EVENT_TAG: Record<string, string> = {
+  GRAVE: 'BURI',
+  CENSUS_RECORD: 'CENS',
+  IMMIGRATION_RECORD: 'IMMI',
+};
 
 // Artifact Configuration
 export const ARTIFACT_CONFIG = {

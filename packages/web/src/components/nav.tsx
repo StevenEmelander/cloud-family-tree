@@ -18,6 +18,8 @@ function Icon({ d }: { d: string }) {
 const ICONS = {
   addPerson:
     'M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3zm14-8h2v2h-2v2h-2v-2h-2v-2h2V8h2v2z',
+  sources:
+    'M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm2 10a1 1 0 000 2h4a1 1 0 100-2H8zm0-3a1 1 0 000 2h4a1 1 0 100-2H8z',
   review:
     'M9 2a1 1 0 000 2h2a1 1 0 100-2H9zM4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm5 3a1 1 0 000 2h2a1 1 0 100-2H9zm-1 4a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z',
   admin:
@@ -75,6 +77,10 @@ export function Nav() {
                     <Link href="/people/new" className={styles.dropdownItem}>
                       <Icon d={ICONS.addPerson} />
                       Add Person
+                    </Link>
+                    <Link href="/sources" className={styles.dropdownItem}>
+                      <Icon d={ICONS.sources} />
+                      Sources
                     </Link>
                     <Link href="/review-issues" className={styles.dropdownItem}>
                       <Icon d={ICONS.review} />

@@ -258,6 +258,23 @@
   margin-bottom: 1rem;
 }
 
+.dataLinks {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dataLink {
+  font-size: 0.8125rem;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.dataLink:hover {
+  text-decoration: underline;
+}
+
 .gedcomSection {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -404,6 +421,18 @@
   cursor: not-allowed;
 }
 
+.exportButtons {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.exportHint {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  margin: 0;
+}
+
 .btnDismiss {
   padding: 0.25rem 0.75rem;
   background: transparent;
@@ -479,6 +508,7 @@
 
 .resultStats {
   display: flex;
+  flex-wrap: wrap;
   gap: 2rem;
   margin-bottom: 0.5rem;
 }

@@ -24,12 +24,38 @@ vi.mock('../../src/repositories/relationship.repository', () => ({
   }),
 }));
 
+vi.mock('../../src/repositories/source.repository', () => ({
+  SourceRepository: vi.fn().mockImplementation(function () {
+    return {
+      batchCreate: vi.fn().mockResolvedValue(undefined),
+      iterateAll: vi.fn().mockImplementation(async function* () {
+        // Empty DB by default — no existing sources
+      }),
+    };
+  }),
+}));
+
+vi.mock('../../src/repositories/artifact.repository', () => ({
+  ArtifactRepository: vi.fn().mockImplementation(function () {
+    return {
+      create: vi.fn().mockResolvedValue(undefined),
+    };
+  }),
+}));
+
+vi.mock('../../src/lib/s3', () => ({
+  s3Client: { send: vi.fn().mockResolvedValue({}) },
+  BucketNames: { Photos: 'test-bucket' },
+}));
+
+vi.mock('@aws-sdk/client-s3', () => ({
+  PutObjectCommand: vi.fn(),
+}));
+
 const MINIMAL_GEDCOM = `0 HEAD
 1 SOUR Test
 1 GEDC
-2 VERS 5.5.1
-2 FORM LINEAGE-LINKED
-1 CHAR UTF-8
+2 VERS 7.0
 0 @I1@ INDI
 1 NAME John /Doe/
 1 SEX M
@@ -52,9 +78,7 @@ const MINIMAL_GEDCOM = `0 HEAD
 const FAMILY_WITH_CHILDREN = `0 HEAD
 1 SOUR Test
 1 GEDC
-2 VERS 5.5.1
-2 FORM LINEAGE-LINKED
-1 CHAR UTF-8
+2 VERS 7.0
 0 @I1@ INDI
 1 NAME Father /Test/
 1 SEX M
@@ -132,9 +156,7 @@ describe('GedcomImportService', () => {
     const empty = `0 HEAD
 1 SOUR Test
 1 GEDC
-2 VERS 5.5.1
-2 FORM LINEAGE-LINKED
-1 CHAR UTF-8
+2 VERS 7.0
 0 TRLR`;
 
     const result = await service.import(empty);
@@ -143,18 +165,17 @@ describe('GedcomImportService', () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  it('returns zero photos added', async () => {
+  it('returns zero artifacts when no media provided', async () => {
     const result = await service.import(MINIMAL_GEDCOM);
-    expect(result.photosAdded).toBe(0);
+    expect(result.artifactsAdded).toBe(0);
+    expect(result.artifactsSkipped).toBe(0);
   });
 
   it('handles ABT/AFT date prefixes', async () => {
     const gedcom = `0 HEAD
 1 SOUR Test
 1 GEDC
-2 VERS 5.5.1
-2 FORM LINEAGE-LINKED
-1 CHAR UTF-8
+2 VERS 7.0
 0 @I1@ INDI
 1 NAME John /Doe/
 1 SEX M
@@ -176,5 +197,85 @@ describe('GedcomImportService', () => {
     expect(people[0].birthDateQualifier).toBe('ABT');
     expect(people[1].birthDate).toBe('1970');
     expect(people[1].birthDateQualifier).toBe('AFT');
+  });
+
+  it('imports sources from SOUR records', async () => {
+    const gedcom = `0 HEAD
+1 SOUR Test
+1 GEDC
+2 VERS 7.0
+0 @S1@ SOUR
+1 TITL Birth Records of Springfield
+1 AUTH County Clerk
+0 @I1@ INDI
+1 NAME John /Doe/
+1 SEX M
+1 BIRT
+2 DATE 15 MAR 1960
+2 SOUR @S1@
+3 PAGE p. 42
+0 TRLR`;
+
+    const result = await service.import(gedcom);
+    expect(result.sourcesAdded).toBe(1);
+    expect(result.peopleAdded).toBe(1);
+
+    const people = personRepo.batchCreate.mock.calls[0][0];
+    expect(people[0].citations).toBeDefined();
+    expect(people[0].citations).toHaveLength(1);
+    expect(people[0].citations[0].eventType).toBe('BIRT');
+    expect(people[0].citations[0].page).toBe('p. 42');
+  });
+
+  it('rejects GEDCOM 5.5.1 files', async () => {
+    const gedcom551 = `0 HEAD
+1 SOUR Test
+1 GEDC
+2 VERS 5.5.1
+0 @I1@ INDI
+1 NAME John /Doe/
+1 SEX M
+0 TRLR`;
+
+    const result = await service.import(gedcom551);
+    expect(result.peopleAdded).toBe(0);
+    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.errors[0]).toContain('Unsupported GEDCOM version');
+  });
+
+  it('rejects files with no GEDC version block', async () => {
+    const noVersion = `0 HEAD
+1 SOUR Test
+0 @I1@ INDI
+1 NAME John /Doe/
+1 SEX M
+0 TRLR`;
+
+    const result = await service.import(noVersion);
+    expect(result.peopleAdded).toBe(0);
+    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.errors[0]).toContain('Unsupported GEDCOM version');
+  });
+
+  it('imports alternate names', async () => {
+    const gedcom = `0 HEAD
+1 SOUR Test
+1 GEDC
+2 VERS 7.0
+0 @I1@ INDI
+1 NAME Jane /Smith/
+1 SEX F
+1 NAME Jane /Doe/
+2 TYPE MAIDEN
+0 TRLR`;
+
+    const result = await service.import(gedcom);
+    expect(result.peopleAdded).toBe(1);
+
+    const people = personRepo.batchCreate.mock.calls[0][0];
+    expect(people[0].alternateNames).toBeDefined();
+    expect(people[0].alternateNames).toHaveLength(1);
+    expect(people[0].alternateNames[0].type).toBe('MAIDEN');
+    expect(people[0].alternateNames[0].lastName).toBe('Doe');
   });
 });

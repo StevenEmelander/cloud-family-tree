@@ -1,11 +1,14 @@
 import type {
   AdminUserListItem,
   Artifact,
+  CreateSourceInput,
   Entry,
   GedcomImportResult,
   Person,
   PresignedUrlResponse,
   Relationship,
+  Source,
+  UpdateSourceInput,
 } from '@cloud-family-tree/shared';
 import { getIdToken } from './auth';
 
@@ -116,6 +119,35 @@ export const api = {
     }),
 
   exportGedcom: () => apiFetch<{ gedcom: string }>('/tree/export-gedcom'),
+
+  // GEDZIP
+  exportGedzip: () =>
+    apiFetch<{ downloadUrl: string; peopleExported: number; artifactsExported: number }>(
+      '/tree/export-gedzip',
+      { method: 'POST' },
+    ),
+
+  getGedzipUploadUrl: () =>
+    apiFetch<{ s3Key: string; uploadUrl: string }>('/tree/upload-gedzip', { method: 'POST' }),
+
+  importGedzip: (s3Key: string) =>
+    apiFetch<GedcomImportResult>('/tree/import-gedzip', {
+      method: 'POST',
+      body: JSON.stringify({ s3Key }),
+    }),
+
+  // Sources
+  listSources: () => apiFetch<{ items: Source[]; count: number }>('/sources'),
+
+  getSource: (id: string) => apiFetch<Source>(`/sources/${id}`),
+
+  createSource: (data: CreateSourceInput) =>
+    apiFetch<Source>('/sources', { method: 'POST', body: JSON.stringify(data) }),
+
+  updateSource: (id: string, data: UpdateSourceInput) =>
+    apiFetch<Source>(`/sources/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  deleteSource: (id: string) => apiFetch<void>(`/sources/${id}`, { method: 'DELETE' }),
 
   // Admin
   listUsers: () => apiFetch<{ users: AdminUserListItem[] }>('/admin/users'),

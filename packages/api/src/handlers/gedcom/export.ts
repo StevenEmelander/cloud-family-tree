@@ -13,6 +13,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       gedcom: result.gedcomContent,
       peopleExported: result.peopleExported,
       relationshipsExported: result.relationshipsExported,
+      sourcesExported: result.sourcesExported,
+      artifactsExported: result.artifactsExported,
       exportedAt: result.exportedAt,
     });
   } catch (error) {
