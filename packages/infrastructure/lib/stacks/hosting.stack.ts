@@ -94,8 +94,15 @@ function handler(event) {
         responseHeadersPolicyName: `${config.familyName}Family-SecurityHeaders`,
         securityHeadersBehavior: {
           contentSecurityPolicy: {
-            contentSecurityPolicy:
-              "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.amazonaws.com; connect-src 'self' https://*.amazonaws.com https://*.amazoncognito.com; font-src 'self'; frame-ancestors 'none';",
+            contentSecurityPolicy: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline'",
+              "style-src 'self' 'unsafe-inline'",
+              `img-src 'self' data: blob: https://*.amazonaws.com`,
+              `connect-src 'self' https://api.${config.domain.name} https://*.amazonaws.com https://*.amazoncognito.com`,
+              "font-src 'self'",
+              "frame-ancestors 'none'",
+            ].join('; '),
             override: true,
           },
           strictTransportSecurity: {
