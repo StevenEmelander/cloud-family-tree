@@ -132,32 +132,38 @@ export default function SettingsPage() {
       <div className={styles.card}>
         <h2 className={styles.cardTitle}>Change Password</h2>
         <form onSubmit={handleChangePassword} className={styles.form}>
-          <input
-            type="password"
-            placeholder="Current password"
-            value={oldPassword}
-            onChange={(e) => setOldPassword(e.target.value)}
-            className={styles.input}
-            required
-          />
-          <input
-            type="password"
-            placeholder="New password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            className={styles.input}
-            required
-            minLength={8}
-          />
-          <input
-            type="password"
-            placeholder="Confirm new password"
-            value={confirmPw}
-            onChange={(e) => setConfirmPw(e.target.value)}
-            className={styles.input}
-            required
-            minLength={8}
-          />
+          <label className={styles.fieldLabel}>
+            Current password
+            <input
+              type="password"
+              value={oldPassword}
+              onChange={(e) => setOldPassword(e.target.value)}
+              className={styles.input}
+              required
+            />
+          </label>
+          <label className={styles.fieldLabel}>
+            New password
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className={styles.input}
+              required
+              minLength={8}
+            />
+          </label>
+          <label className={styles.fieldLabel}>
+            Confirm new password
+            <input
+              type="password"
+              value={confirmPw}
+              onChange={(e) => setConfirmPw(e.target.value)}
+              className={styles.input}
+              required
+              minLength={8}
+            />
+          </label>
           {pwError && <p className={styles.error}>{pwError}</p>}
           {pwStatus && <p className={styles.success}>{pwStatus}</p>}
           <button type="submit" className={styles.button} disabled={changingPw}>

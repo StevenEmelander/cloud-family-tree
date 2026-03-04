@@ -102,6 +102,7 @@ function HomePageContent() {
             <input
               type="text"
               placeholder="Enter a first or last name..."
+              aria-label="Search for a family member"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className={styles.searchInput}

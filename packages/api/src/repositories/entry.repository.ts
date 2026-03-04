@@ -138,8 +138,9 @@ export class EntryRepository extends BaseRepository {
     let cursor: string | undefined;
     do {
       const result = await this.findByPerson(personId, 25, cursor);
-      for (const entry of result.items) {
-        await this.delete(entry.entryId, entry.personId);
+      if (result.items.length > 0) {
+        const keys = result.items.map((entry) => this.toKey(entry.entryId, entry.personId));
+        await this.batchDelete(keys);
       }
       cursor = result.lastEvaluatedKey
         ? Buffer.from(JSON.stringify(result.lastEvaluatedKey)).toString('base64')

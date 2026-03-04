@@ -1,5 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import * as budgets from 'aws-cdk-lib/aws-budgets';
+import * as kms from 'aws-cdk-lib/aws-kms';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import type { Construct } from 'constructs';
@@ -17,9 +18,11 @@ export class MonitoringStack extends cdk.Stack {
 
     const { config } = props;
 
-    // SNS topic for alerts
+    // SNS topic for alerts (encrypted with AWS-managed SNS key)
+    const snsKey = kms.Alias.fromAliasName(this, 'SnsKey', 'alias/aws/sns');
     this.alertTopic = new sns.Topic(this, 'AlertTopic', {
       topicName: `${config.familyName}Family-Alerts`,
+      masterKey: snsKey,
     });
 
     this.alertTopic.addSubscription(

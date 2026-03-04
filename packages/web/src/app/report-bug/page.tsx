@@ -60,6 +60,7 @@ export default function ReportBugPage() {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Describe the bug..."
+            aria-label="Bug description"
             className={styles.textarea}
             maxLength={2000}
             rows={6}

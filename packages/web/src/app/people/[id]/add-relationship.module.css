@@ -20,6 +20,11 @@
 }
 
 .btnClose {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   font-size: 1.25rem;
@@ -146,13 +151,22 @@
   gap: 0.5rem;
 }
 
+.formLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-secondary);
+}
+
 .formInput,
 .formSelect {
   padding: 0.5rem 0.625rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   font-size: 0.875rem;
-  background: white;
+  background: var(--color-card);
 }
 
 .formInput:focus,
@@ -200,4 +214,12 @@
 
 .btnCancelWarn:hover {
   background: var(--color-bg);
+}
+
+@media (max-width: 768px) {
+  .searchInput,
+  .formInput,
+  .formSelect {
+    font-size: 1rem;
+  }
 }

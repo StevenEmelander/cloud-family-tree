@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef } from 'react';
 import { api } from '@/lib/api';
+import styles from './page.module.css';
 
 function GotoContent() {
   const searchParams = useSearchParams();
@@ -43,8 +44,8 @@ function GotoContent() {
   }, [name, router]);
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem 1rem' }}>
-      <p style={{ color: 'var(--color-secondary)', fontSize: '0.875rem' }}>Loading...</p>
+    <div className={styles.container}>
+      <p className={styles.loading}>Loading...</p>
     </div>
   );
 }

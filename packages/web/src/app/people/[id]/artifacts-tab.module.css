@@ -316,8 +316,8 @@
 }
 
 .personRemove {
-  width: 24px;
-  height: 24px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -891,7 +891,7 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
   .lightboxContent {
     flex-direction: column;
     align-items: center;

@@ -13,49 +13,16 @@ export class GedcomExportService {
   private readonly artifactRepo = new ArtifactRepository();
 
   async export(): Promise<GedcomExportResult> {
-    // Collect all people
-    const allPeople: Person[] = [];
-    for await (const batch of this.personRepo.iterateAll()) {
-      allPeople.push(...batch);
-    }
+    const data = await this.fetchAllData();
 
-    // Collect all relationships (deduplicated)
-    const allRelationships: Relationship[] = [];
-    const seenRelIds = new Set<string>();
-    for (const person of allPeople) {
-      const rels = await this.relationshipRepo.findByPerson(person.personId);
-      for (const rel of rels) {
-        if (!seenRelIds.has(rel.relationshipId)) {
-          seenRelIds.add(rel.relationshipId);
-          allRelationships.push(rel);
-        }
-      }
-    }
-
-    // Collect all sources
-    const allSources: Source[] = await this.sourceRepo.findAll();
-
-    // Collect all artifacts (per-person)
-    const allArtifacts: Artifact[] = [];
-    for (const person of allPeople) {
-      const result = await this.artifactRepo.findByPerson(person.personId);
-      allArtifacts.push(...result.items);
-    }
-
-    // Generate GEDCOM 7 content
-    const gedcomContent = generateGedcom7({
-      people: allPeople,
-      relationships: allRelationships,
-      sources: allSources,
-      artifacts: allArtifacts,
-    });
+    const gedcomContent = generateGedcom7(data);
 
     return {
       gedcomContent,
-      peopleExported: allPeople.length,
-      relationshipsExported: allRelationships.length,
-      sourcesExported: allSources.length,
-      artifactsExported: allArtifacts.length,
+      peopleExported: data.people.length,
+      relationshipsExported: data.relationships.length,
+      sourcesExported: data.sources.length,
+      artifactsExported: data.artifacts.length,
       exportedAt: isoNow(),
     };
   }
@@ -72,11 +39,11 @@ export class GedcomExportService {
       allPeople.push(...batch);
     }
 
+    // Iterate all relationships via GSI (avoids N+1 per-person queries)
     const allRelationships: Relationship[] = [];
     const seenRelIds = new Set<string>();
-    for (const person of allPeople) {
-      const rels = await this.relationshipRepo.findByPerson(person.personId);
-      for (const rel of rels) {
+    for await (const batch of this.relationshipRepo.iterateAll()) {
+      for (const rel of batch) {
         if (!seenRelIds.has(rel.relationshipId)) {
           seenRelIds.add(rel.relationshipId);
           allRelationships.push(rel);
@@ -86,10 +53,17 @@ export class GedcomExportService {
 
     const allSources: Source[] = await this.sourceRepo.findAll();
 
+    // Iterate all artifacts via GSI (avoids N+1 per-person queries)
     const allArtifacts: Artifact[] = [];
-    for (const person of allPeople) {
-      const result = await this.artifactRepo.findByPerson(person.personId);
-      allArtifacts.push(...result.items);
+    const seenArtifactKeys = new Set<string>();
+    for await (const batch of this.artifactRepo.iterateAll()) {
+      for (const artifact of batch) {
+        const key = `${artifact.artifactId}#${artifact.personId}`;
+        if (!seenArtifactKeys.has(key)) {
+          seenArtifactKeys.add(key);
+          allArtifacts.push(artifact);
+        }
+      }
     }
 
     return {

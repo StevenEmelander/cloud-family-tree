@@ -141,6 +141,22 @@ export abstract class BaseRepository {
     } while (lastKey);
   }
 
+  protected async batchDelete(keys: Record<string, unknown>[]): Promise<void> {
+    const BATCH_SIZE = 25;
+    for (let i = 0; i < keys.length; i += BATCH_SIZE) {
+      const batch = keys.slice(i, i + BATCH_SIZE);
+      await docClient.send(
+        new BatchWriteCommand({
+          RequestItems: {
+            [this.tableName]: batch.map((key) => ({
+              DeleteRequest: { Key: key },
+            })),
+          },
+        }),
+      );
+    }
+  }
+
   protected async batchWrite(items: Record<string, unknown>[]): Promise<void> {
     const BATCH_SIZE = 25;
     for (let i = 0; i < items.length; i += BATCH_SIZE) {

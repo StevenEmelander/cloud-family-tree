@@ -28,7 +28,6 @@ vi.mock('../../src/repositories/person.repository', () => ({
 
 const PERSON1_ID = '11111111-1111-4111-8111-111111111111';
 const PERSON2_ID = '22222222-2222-4222-8222-222222222222';
-const PERSON3_ID = '33333333-3333-4333-8333-333333333333';
 
 function makePerson(id: string): Person {
   return {
@@ -112,65 +111,6 @@ describe('RelationshipService', () => {
 
       await service.delete('rel-123', RelationshipType.PARENT_CHILD);
       expect(relRepo.delete).toHaveBeenCalledWith('rel-123', RelationshipType.PARENT_CHILD);
-    });
-  });
-
-  describe('getAncestors', () => {
-    it('traverses parent chain recursively', async () => {
-      const parent = makePerson(PERSON1_ID);
-      const grandparent = makePerson(PERSON2_ID);
-
-      relRepo.findParentsOf.mockImplementation((id: string) => {
-        if (id === PERSON3_ID)
-          return Promise.resolve([makeRel({ person1Id: PERSON1_ID, person2Id: PERSON3_ID })]);
-        if (id === PERSON1_ID)
-          return Promise.resolve([makeRel({ person1Id: PERSON2_ID, person2Id: PERSON1_ID })]);
-        return Promise.resolve([]);
-      });
-
-      personRepo.findById.mockImplementation((id: string) => {
-        if (id === PERSON1_ID) return Promise.resolve(parent);
-        if (id === PERSON2_ID) return Promise.resolve(grandparent);
-        return Promise.resolve(null);
-      });
-
-      const ancestors = await service.getAncestors(PERSON3_ID);
-      expect(ancestors).toHaveLength(2);
-      expect(ancestors.map((a) => a.personId)).toContain(PERSON1_ID);
-      expect(ancestors.map((a) => a.personId)).toContain(PERSON2_ID);
-    });
-
-    it('respects maxDepth', async () => {
-      relRepo.findParentsOf.mockImplementation((id: string) => {
-        if (id === PERSON3_ID)
-          return Promise.resolve([makeRel({ person1Id: PERSON1_ID, person2Id: PERSON3_ID })]);
-        if (id === PERSON1_ID)
-          return Promise.resolve([makeRel({ person1Id: PERSON2_ID, person2Id: PERSON1_ID })]);
-        return Promise.resolve([]);
-      });
-
-      personRepo.findById.mockImplementation((id: string) => Promise.resolve(makePerson(id)));
-
-      const ancestors = await service.getAncestors(PERSON3_ID, 1);
-      // depth=1 means only traverse 1 level from the start node
-      expect(ancestors).toHaveLength(1);
-    });
-  });
-
-  describe('getDescendants', () => {
-    it('traverses child chain recursively', async () => {
-      relRepo.findChildrenOf.mockImplementation((id: string) => {
-        if (id === PERSON1_ID)
-          return Promise.resolve([makeRel({ person1Id: PERSON1_ID, person2Id: PERSON2_ID })]);
-        if (id === PERSON2_ID)
-          return Promise.resolve([makeRel({ person1Id: PERSON2_ID, person2Id: PERSON3_ID })]);
-        return Promise.resolve([]);
-      });
-
-      personRepo.findById.mockImplementation((id: string) => Promise.resolve(makePerson(id)));
-
-      const descendants = await service.getDescendants(PERSON1_ID);
-      expect(descendants).toHaveLength(2);
     });
   });
 });

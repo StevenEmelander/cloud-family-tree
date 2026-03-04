@@ -5,6 +5,7 @@ import {
 import { PublishCommand, SNSClient } from '@aws-sdk/client-sns';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { authorize } from '../../middleware/auth';
+import { ValidationError } from '../../middleware/error-handler';
 import { errorResponse, successResponse } from '../../middleware/response';
 
 const sns = new SNSClient({});
@@ -17,7 +18,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     // Only visitors should request editor access
     if (user.role === 'admins' || user.role === 'editors') {
-      return successResponse(400, { message: 'You already have editor or admin access' });
+      throw new ValidationError(['You already have editor or admin access']);
     }
 
     // Set custom attribute to track the request

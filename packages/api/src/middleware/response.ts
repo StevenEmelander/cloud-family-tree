@@ -2,7 +2,7 @@ import type { APIGatewayProxyResult } from 'aws-lambda';
 import { AppError, ValidationError } from './error-handler';
 
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': process.env.FRONTEND_DOMAIN || '*',
+  'Access-Control-Allow-Origin': process.env.FRONTEND_DOMAIN || 'https://localhost:3000',
   'Access-Control-Allow-Headers': 'Content-Type,Authorization',
   'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
   'Content-Type': 'application/json',

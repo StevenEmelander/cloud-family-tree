@@ -233,7 +233,10 @@
 }
 
 .btnEdit {
-  padding: 0.125rem 0.5rem;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
   background: transparent;
   color: var(--color-primary);
   border: 1px solid var(--color-border);
@@ -247,7 +250,10 @@
 }
 
 .btnDeleteSmall {
-  padding: 0.125rem 0.5rem;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
   background: transparent;
   color: var(--color-secondary);
   border: 1px solid var(--color-border);
@@ -262,7 +268,10 @@
 }
 
 .btnDeleteConfirm {
-  padding: 0.125rem 0.5rem;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
   background: #dc2626;
   color: white;
   border: none;
@@ -288,5 +297,13 @@
 
   .sourceActions {
     margin-top: 0.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .input,
+  .searchInput,
+  .textarea {
+    font-size: 1rem;
   }
 }

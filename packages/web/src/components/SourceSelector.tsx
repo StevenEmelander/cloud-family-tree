@@ -169,6 +169,7 @@ export function SourceSelector({
         type="text"
         className={styles.input}
         placeholder={placeholder}
+        aria-label="Search or select a source"
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);

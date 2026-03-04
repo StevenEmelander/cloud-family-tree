@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { API_CONFIG, ARTIFACT_CONFIG } from '../constants';
 import { ArtifactType } from '../types/artifact';
 import { flexDatePattern, isValidFlexDate } from '../utils/date.utils';
+import { clearableDate, clearableString } from './schema.utils';
 
 const PDF_ALLOWED_TYPES = new Set([
   ArtifactType.BIRTH_RECORD,
@@ -35,7 +36,7 @@ export const createArtifactSchema = z
       const allowed = PDF_ALLOWED_TYPES.has(data.artifactType)
         ? ARTIFACT_CONFIG.ALLOWED_MIME_TYPES
         : ARTIFACT_CONFIG.ALLOWED_IMAGE_MIME_TYPES;
-      return allowed.includes(data.contentType as never);
+      return (allowed as readonly string[]).includes(data.contentType);
     },
     {
       message: 'Invalid content type for this artifact type',
@@ -46,21 +47,9 @@ export const createArtifactSchema = z
 export type CreateArtifactSchemaInput = z.infer<typeof createArtifactSchema>;
 
 export const updateArtifactSchema = z.object({
-  caption: z
-    .union([z.string().max(500).trim(), z.literal('')])
-    .transform((v) => (v === '' ? undefined : v))
-    .optional(),
-  source: z
-    .union([z.string().max(200).trim(), z.literal('')])
-    .transform((v) => (v === '' ? undefined : v))
-    .optional(),
-  date: z
-    .union([
-      z.string().regex(flexDatePattern, 'Must be YYYY, YYYY-MM, or YYYY-MM-DD').refine(isValidFlexDate, 'Invalid date'),
-      z.literal(''),
-    ])
-    .transform((v) => (v === '' ? undefined : v))
-    .optional(),
+  caption: clearableString(500).optional(),
+  source: clearableString(200).optional(),
+  date: clearableDate.optional(),
   isPrimary: z.boolean().optional(),
   metadata: z.record(z.string(), z.string()).optional(),
 });

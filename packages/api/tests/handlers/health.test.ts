@@ -12,6 +12,6 @@ describe('Health handler', () => {
 
   it('includes CORS headers', async () => {
     const result = await handler();
-    expect(result.headers?.['Access-Control-Allow-Origin']).toBe('*');
+    expect(result.headers?.['Access-Control-Allow-Origin']).toBe('https://localhost:3000');
   });
 });

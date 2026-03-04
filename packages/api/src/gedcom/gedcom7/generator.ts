@@ -405,15 +405,17 @@ function artifactTypeToMedia(artifactType: string): string {
   switch (artifactType) {
     case 'PHOTO': return 'photo';
     case 'GRAVE': return 'tombstone';
-    case 'BIRTH_RECORD': return 'document';
-    case 'DEATH_RECORD': return 'document';
-    case 'MARRIAGE_RECORD': return 'document';
-    case 'DIVORCE_RECORD': return 'document';
-    case 'CENSUS_RECORD': return 'document';
-    case 'IMMIGRATION_RECORD': return 'document';
+    case 'BIRTH_RECORD':
+    case 'DEATH_RECORD':
+    case 'MARRIAGE_RECORD':
+    case 'DIVORCE_RECORD':
+    case 'CENSUS_RECORD':
+    case 'IMMIGRATION_RECORD':
+      return 'document';
     default: return 'other';
   }
 }
+
 
 function buildFamilies(
   relationships: Relationship[],

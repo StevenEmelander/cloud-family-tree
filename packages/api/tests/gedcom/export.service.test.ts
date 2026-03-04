@@ -14,7 +14,7 @@ vi.mock('../../src/repositories/person.repository', () => ({
 vi.mock('../../src/repositories/relationship.repository', () => ({
   RelationshipRepository: vi.fn().mockImplementation(function () {
     return {
-      findByPerson: vi.fn(),
+      iterateAll: vi.fn(),
     };
   }),
 }));
@@ -30,7 +30,7 @@ vi.mock('../../src/repositories/source.repository', () => ({
 vi.mock('../../src/repositories/artifact.repository', () => ({
   ArtifactRepository: vi.fn().mockImplementation(function () {
     return {
-      findByPerson: vi.fn().mockResolvedValue({ items: [] }),
+      iterateAll: vi.fn(),
     };
   }),
 }));
@@ -51,6 +51,7 @@ describe('GedcomExportService', () => {
   let service: GedcomExportService;
   let personRepo: Record<string, ReturnType<typeof vi.fn>>;
   let relationshipRepo: Record<string, ReturnType<typeof vi.fn>>;
+  let artifactRepo: Record<string, ReturnType<typeof vi.fn>>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -58,12 +59,24 @@ describe('GedcomExportService', () => {
     personRepo = (service as unknown as { personRepo: typeof personRepo }).personRepo;
     relationshipRepo = (service as unknown as { relationshipRepo: typeof relationshipRepo })
       .relationshipRepo;
+    artifactRepo = (service as unknown as { artifactRepo: typeof artifactRepo }).artifactRepo;
   });
+
+  /** Helper: set up empty iterateAll mocks for relationship and artifact repos */
+  function mockEmptyRelAndArtifact() {
+    relationshipRepo.iterateAll.mockImplementation(async function* () {
+      // yield nothing
+    });
+    artifactRepo.iterateAll.mockImplementation(async function* () {
+      // yield nothing
+    });
+  }
 
   it('exports empty tree', async () => {
     personRepo.iterateAll.mockImplementation(async function* () {
       // yield nothing
     });
+    mockEmptyRelAndArtifact();
 
     const result = await service.export();
     expect(result.peopleExported).toBe(0);
@@ -87,7 +100,7 @@ describe('GedcomExportService', () => {
     personRepo.iterateAll.mockImplementation(async function* () {
       yield [john];
     });
-    relationshipRepo.findByPerson.mockResolvedValue([]);
+    mockEmptyRelAndArtifact();
 
     const result = await service.export();
     expect(result.peopleExported).toBe(1);
@@ -118,9 +131,11 @@ describe('GedcomExportService', () => {
     personRepo.iterateAll.mockImplementation(async function* () {
       yield [john, jane];
     });
-    relationshipRepo.findByPerson.mockImplementation((id: string) => {
-      if (id === 'ind-1' || id === 'ind-2') return Promise.resolve([spouseRel]);
-      return Promise.resolve([]);
+    relationshipRepo.iterateAll.mockImplementation(async function* () {
+      yield [spouseRel];
+    });
+    artifactRepo.iterateAll.mockImplementation(async function* () {
+      // yield nothing
     });
 
     const result = await service.export();
@@ -135,6 +150,7 @@ describe('GedcomExportService', () => {
     personRepo.iterateAll.mockImplementation(async function* () {
       // empty
     });
+    mockEmptyRelAndArtifact();
 
     const result = await service.export();
     expect(result.gedcomContent).toContain('2 VERS 7.0');

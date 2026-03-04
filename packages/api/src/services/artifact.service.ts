@@ -18,6 +18,7 @@ import {
   updateArtifactSchema,
   validate,
 } from '@cloud-family-tree/shared';
+import { applyClears } from '../lib/service.utils';
 import type { PersonEvent } from '@cloud-family-tree/shared';
 import { v4 as uuid } from 'uuid';
 import { BucketNames, s3Client } from '../lib/s3';
@@ -142,14 +143,13 @@ export class ArtifactService {
     }
 
     const data = result.data;
-    const clearableFields = ['caption', 'source', 'date'] as const;
-    const updates: Record<string, unknown> = { ...data };
-
-    for (const field of clearableFields) {
-      if (field in input && updates[field] === undefined) {
-        updates[field] = null; // null triggers REMOVE in DynamoDB
-      }
-    }
+    const updates = applyClears(input as Record<string, unknown>, data as Record<string, unknown>, [
+      'caption',
+      'source',
+      'date',
+    ]);
+    // Artifacts don't have updatedAt — they use uploadedAt, which is immutable
+    delete updates.updatedAt;
 
     // Handle metadata: empty object means remove, otherwise set
     if ('metadata' in input) {
@@ -225,7 +225,7 @@ export class ArtifactService {
       Key: artifact.s3Key,
     });
 
-    return getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    return getSignedUrl(s3Client, command, { expiresIn: API_CONFIG.VIEW_URL_EXPIRY_SECONDS });
   }
 
   async delete(artifactId: string, personId: string, user: AuthenticatedUser): Promise<void> {
@@ -379,16 +379,16 @@ export class ArtifactService {
     if (!artifact) throw new NotFoundError('Artifact', artifactId);
 
     const associations = await this.artifactRepo.findAllAssociations(artifactId);
-    const results: { personId: string; name: string }[] = [];
 
-    for (const assoc of associations) {
-      const person = await this.personRepo.findById(assoc.personId);
-      if (person) {
+    const results = await Promise.all(
+      associations.map(async (assoc) => {
+        const person = await this.personRepo.findById(assoc.personId);
+        if (!person) return null;
         const name = `${person.firstName}${person.middleName ? ` ${person.middleName}` : ''} ${person.lastName}`;
-        results.push({ personId: assoc.personId, name });
-      }
-    }
+        return { personId: assoc.personId, name };
+      }),
+    );
 
-    return results;
+    return results.filter((r): r is NonNullable<typeof r> => r !== null);
   }
 }

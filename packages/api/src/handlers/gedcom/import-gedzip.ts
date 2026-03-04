@@ -17,6 +17,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     if (!s3Key || typeof s3Key !== 'string') {
       throw new ValidationError(['s3Key is required']);
     }
+    if (!s3Key.startsWith('gedzip/') || s3Key.includes('..')) {
+      throw new ValidationError(['Invalid s3Key']);
+    }
 
     const { gedcomContent, mediaFiles, metadata } = await extractGedzip(BucketNames.Photos, s3Key);
     const result = await service.import(gedcomContent, mediaFiles, metadata);

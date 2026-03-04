@@ -19,6 +19,7 @@
   color: var(--color-muted);
   text-decoration: underline;
   text-underline-offset: 2px;
+  padding: 0.5rem 0;
 }
 
 .link:hover {

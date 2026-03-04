@@ -25,11 +25,13 @@ export class HostingStack extends cdk.Stack {
     const { config } = props;
     const domainName = config.domain.name;
 
-    // Look up hosted zone
-    const hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'HostedZone', {
-      hostedZoneId: config.domain.hostedZoneId,
-      zoneName: domainName,
-    });
+    // Look up hosted zone (by ID if provided, otherwise by domain name from AWS credentials)
+    const hostedZone = config.domain.hostedZoneId
+      ? route53.HostedZone.fromHostedZoneAttributes(this, 'HostedZone', {
+          hostedZoneId: config.domain.hostedZoneId,
+          zoneName: domainName,
+        })
+      : route53.HostedZone.fromLookup(this, 'HostedZone', { domainName });
 
     // S3 bucket for static site
     this.siteBucket = new s3.Bucket(this, 'SiteBucket', {
@@ -91,6 +93,11 @@ function handler(event) {
       {
         responseHeadersPolicyName: `${config.familyName}Family-SecurityHeaders`,
         securityHeadersBehavior: {
+          contentSecurityPolicy: {
+            contentSecurityPolicy:
+              "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.amazonaws.com; connect-src 'self' https://*.amazonaws.com https://*.amazoncognito.com; font-src 'self'; frame-ancestors 'none';",
+            override: true,
+          },
           strictTransportSecurity: {
             accessControlMaxAge: cdk.Duration.days(365),
             includeSubdomains: true,

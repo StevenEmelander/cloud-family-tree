@@ -29,6 +29,7 @@ export const API_CONFIG = {
   MAX_GEDZIP_FILE_SIZE_MB: 200,
   MAX_ARTIFACT_FILE_SIZE_MB: 5,
   PRESIGNED_URL_EXPIRY_SECONDS: 300, // 5 minutes
+  VIEW_URL_EXPIRY_SECONDS: 3600, // 1 hour
   PAGINATION_DEFAULT_LIMIT: 100,
   PAGINATION_MAX_LIMIT: 1000,
   MAX_ANCESTOR_DEPTH: 20,
@@ -41,6 +42,9 @@ export const ARTIFACT_TYPE_TO_EVENT_TAG: Record<string, string> = {
   CENSUS_RECORD: 'CENS',
   IMMIGRATION_RECORD: 'IMMI',
 };
+
+// Cursor HMAC signing secret for pagination tokens
+export const CURSOR_HMAC_SECRET = process.env.CURSOR_HMAC_SECRET || 'cloud-family-tree-cursor-v1';
 
 // Artifact Configuration
 export const ARTIFACT_CONFIG = {

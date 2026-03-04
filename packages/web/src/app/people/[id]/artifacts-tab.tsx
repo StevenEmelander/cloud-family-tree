@@ -4,10 +4,8 @@ import type {
   Artifact,
   Person,
   Relationship,
-  RelationshipMetadata,
 } from '@cloud-family-tree/shared';
 import { ArtifactType } from '@cloud-family-tree/shared';
-import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlexDateInput } from '@/components/FlexDateInput';
 import { api } from '@/lib/api';
@@ -15,6 +13,8 @@ import { useAuth } from '@/lib/auth-context';
 import { canEditPeople } from '@/lib/auth-utils';
 import { formatLifespan } from '@/lib/date-utils';
 import { getErrorMessage } from '@/lib/errors';
+import { ArtifactGallery } from './ArtifactGallery';
+import { LightboxOverlay } from './LightboxOverlay';
 import styles from './artifacts-tab.module.css';
 
 const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp';
@@ -30,7 +30,7 @@ const RECORD_TYPES = new Set([
   ArtifactType.IMMIGRATION_RECORD,
 ]);
 
-const TYPE_LABELS: Record<string, string> = {
+export const TYPE_LABELS: Record<string, string> = {
   PHOTO: 'Photo',
   GRAVE: 'Grave',
   BIRTH_RECORD: 'Birth Record',
@@ -42,7 +42,7 @@ const TYPE_LABELS: Record<string, string> = {
   OTHER: 'Other',
 };
 
-const TYPE_BADGE_CLASS: Record<string, string> = {
+export const TYPE_BADGE_CLASS: Record<string, string> = {
   PHOTO: 'badgePhoto',
   GRAVE: 'badgeGrave',
   BIRTH_RECORD: 'badgeBirth',
@@ -54,7 +54,7 @@ const TYPE_BADGE_CLASS: Record<string, string> = {
   OTHER: 'badgeOther',
 };
 
-function formatSource(source: string): { text: string; href?: string } {
+export function formatSource(source: string): { text: string; href?: string } {
   if (source.startsWith('http')) {
     try {
       return { text: new URL(source).hostname.replace(/^www\./, ''), href: source };
@@ -65,13 +65,13 @@ function formatSource(source: string): { text: string; href?: string } {
   return { text: source };
 }
 
-type FilterType = 'all' | 'photos' | 'records' | 'graves';
+export type FilterType = 'all' | 'photos' | 'records' | 'graves';
 
-interface ArtifactWithUrl extends Artifact {
+export interface ArtifactWithUrl extends Artifact {
   viewUrl?: string;
 }
 
-interface RelatedPerson {
+export interface RelatedPerson {
   name: string;
   gender: string;
   birthDate?: string;
@@ -81,7 +81,7 @@ interface RelatedPerson {
 }
 
 // Per-person editable evidence fields
-interface PersonEvidence {
+export interface PersonEvidence {
   id: string;
   name: string;
   relationship: string; // Primary, Spouse, Parent, Child, or Search
@@ -268,14 +268,6 @@ export default function ArtifactsTab({
     if (birthYear && birthYear > year) return false;
     if (deathYear && deathYear < year) return false;
     return true; // alive or unknown
-  }
-
-  // Helper: check if person died underage (before 18)
-  function _diedUnderage(personInfo: RelatedPerson): boolean {
-    const birthYear = parseYear(personInfo.birthDate);
-    const deathYear = parseYear(personInfo.deathDate);
-    if (!birthYear || !deathYear) return false;
-    return deathYear - birthYear < 18;
   }
 
   // Create a PersonEvidence entry for a person
@@ -1144,6 +1136,25 @@ export default function ArtifactsTab({
     }
   }
 
+  async function handleDownload(artifact: ArtifactWithUrl) {
+    try {
+      const { url } = await api.getArtifactUrl(artifact.artifactId, personId);
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = artifact.fileName;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function canDeleteArtifact(artifact: ArtifactWithUrl): boolean {
+    return !!(user?.role === 'admins' || artifact.uploadedBy === user?.userId);
+  }
+
   // Filter artifacts
   const filtered = artifacts.filter((a) => {
     if (filter === 'all') return true;
@@ -1704,413 +1715,36 @@ export default function ArtifactsTab({
         </div>
       )}
 
-      {loading ? (
-        <p className={styles.status}>Loading artifacts...</p>
-      ) : (
-        <>
-          {/* Filter tabs */}
-          {artifacts.length > 0 && (
-            <div className={styles.filterTabs}>
-              {(
-                [
-                  ['all', 'All'],
-                  ['graves', 'Grave'],
-                  ['records', 'Records'],
-                  ['photos', 'Photos'],
-                ] as const
-              ).map(([key, label]) => (
-                <button
-                  key={key}
-                  type="button"
-                  className={`${styles.filterTab} ${filter === key ? styles.filterTabActive : ''}`}
-                  onClick={() => setFilter(key)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Gallery grid */}
-          {filtered.length === 0 ? (
-            <p className={styles.empty}>
-              {artifacts.length === 0 ? 'No artifacts yet.' : 'No artifacts match this filter.'}
-            </p>
-          ) : (
-        <div className={styles.grid}>
-          {filtered.map((artifact) => (
-            <div key={`${artifact.artifactId}-${artifact.personId}`} className={styles.card}>
-              {artifact.contentType === 'application/pdf' ? (
-                <button
-                  type="button"
-                  className={styles.pdfPlaceholder}
-                  onClick={async () => {
-                    try {
-                      const { url } = await api.getArtifactUrl(artifact.artifactId, personId);
-                      window.open(url, '_blank');
-                    } catch {
-                      // ignore
-                    }
-                  }}
-                >
-                  <span className={styles.pdfIcon}>PDF</span>
-                  <span className={styles.pdfLabel}>
-                    {TYPE_LABELS[artifact.artifactType] || 'Document'}
-                  </span>
-                </button>
-              ) : artifact.viewUrl ? (
-                <button
-                  type="button"
-                  className={styles.imageButton}
-                  onClick={() => openLightbox(artifact)}
-                >
-                  {/* biome-ignore lint/performance/noImgElement: S3 presigned URL not compatible with next/image */}
-                  <img
-                    src={artifact.viewUrl}
-                    alt={artifact.caption || artifact.fileName}
-                    className={styles.image}
-                    loading="lazy"
-                  />
-                </button>
-              ) : (
-                <div className={styles.imagePlaceholder}>Unable to load</div>
-              )}
-              <div className={styles.cardInfo}>
-                <span
-                  className={`${styles.typeBadge} ${styles[TYPE_BADGE_CLASS[artifact.artifactType] || 'badgeOther']}`}
-                >
-                  {TYPE_LABELS[artifact.artifactType] || artifact.artifactType}
-                </span>
-                {artifact.caption && <p className={styles.caption}>{artifact.caption}</p>}
-                {artifact.metadata?.censusLocation && (
-                  <p className={styles.date}>Location: {artifact.metadata.censusLocation}</p>
-                )}
-                {artifact.metadata?.shipName && (
-                  <p className={styles.date}>Ship: {artifact.metadata.shipName}</p>
-                )}
-                {artifact.metadata?.portOfArrival && (
-                  <p className={styles.date}>Port: {artifact.metadata.portOfArrival}</p>
-                )}
-                {artifact.source &&
-                  (() => {
-                    const { text, href } = formatSource(artifact.source ?? '');
-                    return (
-                      <p className={styles.source}>
-                        Source:{' '}
-                        {href ? (
-                          <a href={href} target="_blank" rel="noopener noreferrer">
-                            {text}
-                          </a>
-                        ) : (
-                          text
-                        )}
-                      </p>
-                    );
-                  })()}
-                {artifact.date && <p className={styles.date}>Date: {artifact.date}</p>}
-                {artifact.isPrimary && <span className={styles.primaryBadge}>Profile Photo</span>}
-                <div className={styles.cardActions}>
-                  <button
-                    type="button"
-                    className={styles.btnDownload}
-                    onClick={async () => {
-                      try {
-                        const { url } = await api.getArtifactUrl(artifact.artifactId, personId);
-                        const res = await fetch(url);
-                        const blob = await res.blob();
-                        const a = document.createElement('a');
-                        a.href = URL.createObjectURL(blob);
-                        a.download = artifact.fileName;
-                        a.click();
-                        URL.revokeObjectURL(a.href);
-                      } catch {
-                        /* ignore */
-                      }
-                    }}
-                  >
-                    Download
-                  </button>
-                  {(user?.role === 'admins' || artifact.uploadedBy === user?.userId) && (
-                    <>
-                      <button
-                        type="button"
-                        className={styles.btnEdit}
-                        onClick={() => startEditing(artifact)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.btnDelete}
-                        onClick={() => handleDelete(artifact)}
-                      >
-                        Delete
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-          )}
-        </>
-      )}
+      <ArtifactGallery
+        artifacts={artifacts}
+        loading={loading}
+        filter={filter}
+        onFilterChange={setFilter}
+        onArtifactEdit={startEditing}
+        onArtifactDelete={handleDelete}
+        onArtifactOpenLightbox={openLightbox}
+        onArtifactDownload={handleDownload}
+        canDelete={canDeleteArtifact}
+        personId={personId}
+        filteredArtifacts={filtered}
+      />
 
       {/* Lightbox overlay */}
-      {lightboxArtifact?.viewUrl &&
-        (() => {
-          const lbType = lightboxArtifact.artifactType as ArtifactType;
-          const lbSource = lightboxArtifact.source ? formatSource(lightboxArtifact.source) : null;
-
-          // Find marriage/divorce metadata from relationships
-          let spouseRelMeta: RelationshipMetadata | undefined;
-          if (lbType === ArtifactType.MARRIAGE_RECORD || lbType === ArtifactType.DIVORCE_RECORD) {
-            const spouseAssoc = lightboxAssociations.find((a) => a.personId !== personId);
-            if (spouseAssoc) {
-              const rel = relationships.find(
-                (r) =>
-                  r.relationshipType === 'SPOUSE' &&
-                  (r.person1Id === spouseAssoc.personId || r.person2Id === spouseAssoc.personId),
-              );
-              spouseRelMeta = rel?.metadata;
-            }
-          }
-
-          return (
-            // biome-ignore lint/a11y/noStaticElementInteractions: lightbox backdrop click-to-dismiss pattern
-            <div
-              className={styles.lightboxOverlay}
-              role="presentation"
-              onClick={closeLightbox}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') closeLightbox();
-              }}
-            >
-              <div
-                className={styles.lightboxContent}
-                role="dialog"
-                onClick={(e) => e.stopPropagation()}
-                onKeyDown={(e) => e.stopPropagation()}
-              >
-                <button type="button" className={styles.lightboxClose} onClick={closeLightbox}>
-                  &times;
-                </button>
-
-                <div className={styles.lightboxImageContainer}>
-                  {/* biome-ignore lint/performance/noImgElement: S3 presigned URL not compatible with next/image */}
-                  <img
-                    src={lightboxArtifact.viewUrl}
-                    alt={lightboxArtifact.caption || lightboxArtifact.fileName}
-                    className={styles.lightboxImage}
-                  />
-                </div>
-
-                <div className={styles.lightboxDetails}>
-                  {/* Type badge */}
-                  <span
-                    className={`${styles.typeBadge} ${styles[TYPE_BADGE_CLASS[lightboxArtifact.artifactType] || 'badgeOther']}`}
-                  >
-                    {TYPE_LABELS[lightboxArtifact.artifactType] || lightboxArtifact.artifactType}
-                  </span>
-
-                  {/* Caption / Inscription */}
-                  {lightboxArtifact.caption && (
-                    <div className={styles.lightboxDetailRow}>
-                      <span className={styles.lightboxDetailLabel}>
-                        {lbType === ArtifactType.GRAVE ? 'Inscription' : 'Caption'}
-                      </span>
-                      <p className={styles.lightboxDetailValue}>{lightboxArtifact.caption}</p>
-                    </div>
-                  )}
-
-                  {/* Source */}
-                  {lbSource && (
-                    <div className={styles.lightboxDetailRow}>
-                      <span className={styles.lightboxDetailLabel}>Source</span>
-                      <p className={styles.lightboxDetailValue}>
-                        {lbSource.href ? (
-                          <a href={lbSource.href} target="_blank" rel="noopener noreferrer">
-                            {lbSource.text}
-                          </a>
-                        ) : (
-                          lbSource.text
-                        )}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Date */}
-                  {lightboxArtifact.date && (
-                    <div className={styles.lightboxDetailRow}>
-                      <span className={styles.lightboxDetailLabel}>Date</span>
-                      <p className={styles.lightboxDetailValue}>{lightboxArtifact.date}</p>
-                    </div>
-                  )}
-
-                  {/* Type-specific metadata */}
-                  {lbType === ArtifactType.GRAVE && person.burialPlace && (
-                    <div className={styles.lightboxDetailRow}>
-                      <span className={styles.lightboxDetailLabel}>Cemetery / Location</span>
-                      <p className={styles.lightboxDetailValue}>{person.burialPlace}</p>
-                    </div>
-                  )}
-                  {lbType === ArtifactType.BIRTH_RECORD && person.birthPlace && (
-                    <div className={styles.lightboxDetailRow}>
-                      <span className={styles.lightboxDetailLabel}>Birth Place</span>
-                      <p className={styles.lightboxDetailValue}>{person.birthPlace}</p>
-                    </div>
-                  )}
-                  {lbType === ArtifactType.DEATH_RECORD && person.deathPlace && (
-                    <div className={styles.lightboxDetailRow}>
-                      <span className={styles.lightboxDetailLabel}>Death Place</span>
-                      <p className={styles.lightboxDetailValue}>{person.deathPlace}</p>
-                    </div>
-                  )}
-                  {lbType === ArtifactType.CENSUS_RECORD &&
-                    lightboxArtifact.metadata?.censusLocation && (
-                      <div className={styles.lightboxDetailRow}>
-                        <span className={styles.lightboxDetailLabel}>Location</span>
-                        <p className={styles.lightboxDetailValue}>
-                          {lightboxArtifact.metadata.censusLocation}
-                        </p>
-                      </div>
-                    )}
-                  {lbType === ArtifactType.IMMIGRATION_RECORD &&
-                    lightboxArtifact.metadata?.shipName && (
-                      <div className={styles.lightboxDetailRow}>
-                        <span className={styles.lightboxDetailLabel}>Ship</span>
-                        <p className={styles.lightboxDetailValue}>
-                          {lightboxArtifact.metadata.shipName}
-                        </p>
-                      </div>
-                    )}
-                  {lbType === ArtifactType.IMMIGRATION_RECORD &&
-                    lightboxArtifact.metadata?.portOfArrival && (
-                      <div className={styles.lightboxDetailRow}>
-                        <span className={styles.lightboxDetailLabel}>Port of Arrival</span>
-                        <p className={styles.lightboxDetailValue}>
-                          {lightboxArtifact.metadata.portOfArrival}
-                        </p>
-                      </div>
-                    )}
-                  {lbType === ArtifactType.MARRIAGE_RECORD && spouseRelMeta && (
-                    <>
-                      {spouseRelMeta.marriageDate && (
-                        <div className={styles.lightboxDetailRow}>
-                          <span className={styles.lightboxDetailLabel}>Marriage Date</span>
-                          <p className={styles.lightboxDetailValue}>{spouseRelMeta.marriageDate}</p>
-                        </div>
-                      )}
-                      {spouseRelMeta.marriagePlace && (
-                        <div className={styles.lightboxDetailRow}>
-                          <span className={styles.lightboxDetailLabel}>Marriage Place</span>
-                          <p className={styles.lightboxDetailValue}>
-                            {spouseRelMeta.marriagePlace}
-                          </p>
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {lbType === ArtifactType.DIVORCE_RECORD && spouseRelMeta && (
-                    <>
-                      {spouseRelMeta.divorceDate && (
-                        <div className={styles.lightboxDetailRow}>
-                          <span className={styles.lightboxDetailLabel}>Divorce Date</span>
-                          <p className={styles.lightboxDetailValue}>{spouseRelMeta.divorceDate}</p>
-                        </div>
-                      )}
-                      {spouseRelMeta.divorcePlace && (
-                        <div className={styles.lightboxDetailRow}>
-                          <span className={styles.lightboxDetailLabel}>Divorce Place</span>
-                          <p className={styles.lightboxDetailValue}>{spouseRelMeta.divorcePlace}</p>
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {/* Profile photo badge */}
-                  {lightboxArtifact.isPrimary && (
-                    <span className={styles.lightboxPrimaryBadge}>Profile Photo</span>
-                  )}
-
-                  {/* Associated people */}
-                  {(lightboxAssocLoading || lightboxAssociations.length > 0) && (
-                    <div className={styles.lightboxPeopleSection}>
-                      <span className={styles.lightboxDetailLabel}>People</span>
-                      {lightboxAssocLoading ? (
-                        <span className={styles.lightboxLoading}>Loading...</span>
-                      ) : (
-                        lightboxAssociations.map((assoc) => {
-                          const isGrave = lbType === ArtifactType.GRAVE;
-                          const pInfo =
-                            assoc.personId === personId
-                              ? { birthDate: person.birthDate, deathDate: person.deathDate }
-                              : relatedPeople[assoc.personId];
-                          const lifespan = pInfo
-                            ? formatLifespan(pInfo.birthDate, pInfo.deathDate)
-                            : '';
-                          return (
-                            <Link
-                              key={assoc.personId}
-                              href={`/people/${assoc.personId}`}
-                              className={styles.lightboxPersonLink}
-                              onClick={closeLightbox}
-                            >
-                              <span>{assoc.name}</span>
-                              {(isGrave || lifespan) && (
-                                <span className={styles.lightboxPersonLifespan}>{lifespan}</span>
-                              )}
-                            </Link>
-                          );
-                        })
-                      )}
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className={styles.lightboxActions}>
-                    <button
-                      type="button"
-                      className={styles.btnDownload}
-                      onClick={async () => {
-                        try {
-                          const { url } = await api.getArtifactUrl(
-                            lightboxArtifact.artifactId,
-                            personId,
-                          );
-                          const res = await fetch(url);
-                          const blob = await res.blob();
-                          const a = document.createElement('a');
-                          a.href = URL.createObjectURL(blob);
-                          a.download = lightboxArtifact.fileName;
-                          a.click();
-                          URL.revokeObjectURL(a.href);
-                        } catch {
-                          /* ignore */
-                        }
-                      }}
-                    >
-                      Download
-                    </button>
-                    {canEdit && (
-                      <button
-                        type="button"
-                        className={styles.btnEdit}
-                        onClick={() => {
-                          startEditing(lightboxArtifact);
-                          closeLightbox();
-                        }}
-                      >
-                        Edit
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
+      {lightboxArtifact?.viewUrl && (
+        <LightboxOverlay
+          artifact={lightboxArtifact}
+          personId={personId}
+          person={person}
+          relatedPeople={relatedPeople}
+          relationships={relationships}
+          associations={lightboxAssociations}
+          associationsLoading={lightboxAssocLoading}
+          canEdit={canEdit}
+          onClose={closeLightbox}
+          onEdit={startEditing}
+          onDownload={handleDownload}
+        />
+      )}
     </div>
   );
 }

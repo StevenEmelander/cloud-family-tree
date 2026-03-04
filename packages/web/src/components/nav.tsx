@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { displayRole, siteConfig } from '@/lib/site-config';
 import styles from './nav.module.css';
@@ -35,11 +36,32 @@ export function Nav() {
   const { user, loading, signOut } = useAuth();
   const pathname = usePathname();
   const isEditor = user?.role === 'admins' || user?.role === 'editors';
+  const [menuOpen, setMenuOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close menu on click outside
+  const handleClickOutside = useCallback((e: MouseEvent) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      setMenuOpen(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [menuOpen, handleClickOutside]);
+
+  // Close menu on route change
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   if (pathname === '/login' || pathname === '/register') return null;
 
   return (
-    <nav className={styles.nav}>
+    <nav className={styles.nav} aria-label="Main navigation">
       <div className={styles.inner}>
         <Link href="/" className={styles.brand}>
           {siteConfig.treeName}
@@ -49,8 +71,14 @@ export function Nav() {
             About
           </Link>
           {loading ? null : user ? (
-            <div className={styles.dropdown}>
-              <button type="button" className={styles.menuBtn} aria-label="Menu">
+            <div className={styles.dropdown} ref={dropdownRef}>
+              <button
+                type="button"
+                className={styles.menuBtn}
+                aria-label="Menu"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen((o) => !o)}
+              >
                 <svg
                   className={styles.menuIcon}
                   viewBox="0 0 24 24"
@@ -62,7 +90,7 @@ export function Nav() {
                   <path d="M12 14c-5.33 0-8 2.67-8 6v1h16v-1c0-3.33-2.67-6-8-6z" />
                 </svg>
               </button>
-              <div className={styles.dropdownMenu}>
+              <div className={menuOpen ? styles.dropdownMenuOpen : styles.dropdownMenu}>
                 <div className={styles.menuHeader}>
                   <span className={styles.menuName}>{user.name}</span>
                   <span

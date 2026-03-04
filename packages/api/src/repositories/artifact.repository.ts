@@ -96,12 +96,26 @@ export class ArtifactRepository extends BaseRepository {
     return result.items.map((r) => this.fromRecord(r));
   }
 
+  async *iterateAll(): AsyncGenerator<Artifact[]> {
+    for await (const batch of this.queryAll<Record<string, unknown>>({
+      indexName: GSI_NAMES.ARTIFACT_PERSON_INDEX,
+      keyCondition: 'GSI1PK > :empty',
+      expressionValues: { ':empty': '' },
+      limit: 100,
+    })) {
+      yield batch.map((r) => this.fromRecord(r));
+    }
+  }
+
   async deleteAllForPerson(personId: string): Promise<void> {
     let cursor: string | undefined;
     do {
       const result = await this.findByPerson(personId, 25, cursor);
-      for (const artifact of result.items) {
-        await this.delete(artifact.artifactId, artifact.personId);
+      if (result.items.length > 0) {
+        const keys = result.items.map((artifact) =>
+          this.toKey(artifact.artifactId, artifact.personId),
+        );
+        await this.batchDelete(keys);
       }
       cursor = result.lastEvaluatedKey
         ? Buffer.from(JSON.stringify(result.lastEvaluatedKey)).toString('base64')

@@ -50,6 +50,7 @@ export function FlexDateInput({
         type="text"
         className={styles.flexDateYear}
         placeholder="YYYY"
+        aria-label="Year"
         maxLength={4}
         value={year}
         onChange={(e) => {
@@ -60,6 +61,7 @@ export function FlexDateInput({
       />
       <select
         className={styles.flexDateSelect}
+        aria-label="Month"
         value={month}
         onChange={(e) => {
           const m = e.target.value;
@@ -76,6 +78,7 @@ export function FlexDateInput({
       </select>
       <select
         className={styles.flexDateSelect}
+        aria-label="Day"
         value={day}
         onChange={(e) => assemble(year, month, e.target.value)}
         disabled={disabled || !month}

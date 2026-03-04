@@ -86,12 +86,8 @@ export class EntryService {
     if (type === 'bug') {
       // Only admins can resolve bugs
       canDelete = user.role === 'admins';
-    } else if (type === 'issue') {
-      // Author, editors, or admins can resolve issues
-      canDelete =
-        existing.authorId === user.userId || user.role === 'editors' || user.role === 'admins';
     } else {
-      // Wall entries: author, editors, or admins
+      // Issues and wall entries: author, editors, or admins
       canDelete =
         existing.authorId === user.userId || user.role === 'editors' || user.role === 'admins';
     }

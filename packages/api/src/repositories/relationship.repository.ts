@@ -157,8 +157,7 @@ export class RelationshipRepository extends BaseRepository {
 
   async deleteAllForPerson(personId: string): Promise<void> {
     const relationships = await this.findByPerson(personId);
-    for (const rel of relationships) {
-      await this.delete(rel.relationshipId, rel.relationshipType);
-    }
+    const keys = relationships.map((rel) => this.toKey(rel.relationshipId, rel.relationshipType));
+    await this.batchDelete(keys);
   }
 }

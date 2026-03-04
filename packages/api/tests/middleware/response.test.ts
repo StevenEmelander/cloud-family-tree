@@ -13,7 +13,7 @@ describe('Response middleware', () => {
 
     it('includes CORS headers', () => {
       const result = successResponse(200, null);
-      expect(result.headers?.['Access-Control-Allow-Origin']).toBe('*');
+      expect(result.headers?.['Access-Control-Allow-Origin']).toBe('https://localhost:3000');
       expect(result.headers?.['Access-Control-Allow-Headers']).toBe('Content-Type,Authorization');
       expect(result.headers?.['Access-Control-Allow-Methods']).toBe('GET,POST,PUT,DELETE,OPTIONS');
       expect(result.headers?.['Content-Type']).toBe('application/json');
@@ -70,7 +70,7 @@ describe('Response middleware', () => {
 
     it('includes CORS headers on error responses', () => {
       const result = errorResponse(new Error('test'));
-      expect(result.headers?.['Access-Control-Allow-Origin']).toBe('*');
+      expect(result.headers?.['Access-Control-Allow-Origin']).toBe('https://localhost:3000');
     });
   });
 });

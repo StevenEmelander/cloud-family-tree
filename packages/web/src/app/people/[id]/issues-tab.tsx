@@ -91,9 +91,7 @@ export default function IssuesTab({ personId }: { personId: string }) {
 
       {user && showForm && (
         <div className={styles.entryForm}>
-          <p
-            style={{ fontSize: '0.813rem', color: 'var(--color-fg-muted)', marginBottom: '0.5rem' }}
-          >
+          <p className={styles.issueGuidance}>
             Report data errors, missing info, or corrections needed for this person.
           </p>
           <textarea

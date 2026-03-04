@@ -7,19 +7,28 @@ vi.mock('../../../src/middleware/auth', () => ({
 }));
 
 // Mock relationship service
-const { mockService } = vi.hoisted(() => ({
-  mockService: {
+const { mockRelService, mockPersonService } = vi.hoisted(() => ({
+  mockRelService: {
     create: vi.fn(),
     delete: vi.fn(),
     listByPerson: vi.fn(),
+  },
+  mockPersonService: {
     getAncestors: vi.fn(),
     getDescendants: vi.fn(),
+    getPersonDetail: vi.fn(),
   },
 }));
 
 vi.mock('../../../src/services/relationship.service', () => ({
   RelationshipService: vi.fn().mockImplementation(function () {
-    return mockService;
+    return mockRelService;
+  }),
+}));
+
+vi.mock('../../../src/services/person.service', () => ({
+  PersonService: vi.fn().mockImplementation(function () {
+    return mockPersonService;
   }),
 }));
 
@@ -41,7 +50,7 @@ describe('Relationship handlers', () => {
         person2Id: 'p2',
         relationshipType: 'PARENT_CHILD',
       };
-      mockService.create.mockResolvedValue(rel);
+      mockRelService.create.mockResolvedValue(rel);
 
       const event = makeEvent({
         body: JSON.stringify({
@@ -60,7 +69,7 @@ describe('Relationship handlers', () => {
 
   describe('DELETE /relationships/:id', () => {
     it('deletes a relationship', async () => {
-      mockService.delete.mockResolvedValue(undefined);
+      mockRelService.delete.mockResolvedValue(undefined);
 
       const event = makeEvent({
         pathParameters: { id: 'rel-1' },
@@ -69,13 +78,13 @@ describe('Relationship handlers', () => {
       const result = await deleteRelationship(event);
 
       expect(result.statusCode).toBe(204);
-      expect(mockService.delete).toHaveBeenCalledWith('rel-1', 'PARENT_CHILD');
+      expect(mockRelService.delete).toHaveBeenCalledWith('rel-1', 'PARENT_CHILD');
     });
   });
 
   describe('GET /people/:id/relationships', () => {
     it('lists relationships for a person', async () => {
-      mockService.listByPerson.mockResolvedValue([
+      mockRelService.listByPerson.mockResolvedValue([
         { relationshipId: 'r1', relationshipType: 'SPOUSE' },
       ]);
 
@@ -91,7 +100,7 @@ describe('Relationship handlers', () => {
     });
 
     it('returns ancestors when view=ancestors', async () => {
-      mockService.getAncestors.mockResolvedValue([
+      mockPersonService.getAncestors.mockResolvedValue([
         { personId: 'anc-1', firstName: 'Grandpa', lastName: 'Doe' },
       ]);
 
@@ -104,11 +113,11 @@ describe('Relationship handlers', () => {
       expect(result.statusCode).toBe(200);
       const body = JSON.parse(result.body);
       expect(body.data.items).toHaveLength(1);
-      expect(mockService.getAncestors).toHaveBeenCalledWith('person-1');
+      expect(mockPersonService.getAncestors).toHaveBeenCalledWith('person-1');
     });
 
     it('returns descendants when view=descendants', async () => {
-      mockService.getDescendants.mockResolvedValue([
+      mockPersonService.getDescendants.mockResolvedValue([
         { personId: 'desc-1', firstName: 'Child', lastName: 'Doe' },
       ]);
 
@@ -119,7 +128,7 @@ describe('Relationship handlers', () => {
       const result = await listByPerson(event);
 
       expect(result.statusCode).toBe(200);
-      expect(mockService.getDescendants).toHaveBeenCalledWith('person-1');
+      expect(mockPersonService.getDescendants).toHaveBeenCalledWith('person-1');
     });
 
     it('returns error when id is missing', async () => {

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { DateQualifier, Gender } from '../types/person';
 import { AlternateNameType } from '../types/source';
 import { flexDatePattern, isValidFlexDate } from '../utils/date.utils';
+import { clearableDate, clearableString } from './schema.utils';
 
 const isoDate = z
   .string()
@@ -63,13 +64,6 @@ export const createPersonSchema = z
     },
     { message: 'Death date must not be before birth date', path: ['deathDate'] },
   );
-
-// Update schema allows empty strings to clear optional fields
-const clearableDate = z
-  .union([isoDate, z.literal('')])
-  .transform((v) => (v === '' ? undefined : v));
-const clearableString = (max: number) =>
-  z.union([z.string().max(max).trim(), z.literal('')]).transform((v) => (v === '' ? undefined : v));
 
 export const updatePersonSchema = z
   .object({

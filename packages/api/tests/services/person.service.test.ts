@@ -1,5 +1,5 @@
-import type { Person } from '@cloud-family-tree/shared';
-import { Gender } from '@cloud-family-tree/shared';
+import type { Person, Relationship } from '@cloud-family-tree/shared';
+import { Gender, RelationshipType } from '@cloud-family-tree/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotFoundError, ValidationError } from '../../src/middleware/error-handler';
 import { PersonService } from '../../src/services/person.service';
@@ -23,7 +23,10 @@ vi.mock('../../src/repositories/relationship.repository', () => ({
   RelationshipRepository: vi.fn().mockImplementation(function () {
     return {
       deleteAllForPerson: vi.fn(),
+      findByPerson: vi.fn().mockResolvedValue([]),
+      findParentsOf: vi.fn().mockResolvedValue([]),
       findChildrenOf: vi.fn().mockResolvedValue([]),
+      findSpousesOf: vi.fn().mockResolvedValue([]),
     };
   }),
 }));
@@ -185,6 +188,94 @@ describe('PersonService', () => {
 
       await service.list(5000);
       expect(personRepo.findAll).toHaveBeenCalledWith(1000, undefined);
+    });
+  });
+
+  describe('getAncestors', () => {
+    const PERSON1_ID = '11111111-1111-4111-8111-111111111111';
+    const PERSON2_ID = '22222222-2222-4222-8222-222222222222';
+    const PERSON3_ID = '33333333-3333-4333-8333-333333333333';
+
+    function makeRel(overrides: Partial<Relationship> = {}): Relationship {
+      return {
+        relationshipId: 'rel-123',
+        relationshipType: RelationshipType.PARENT_CHILD,
+        person1Id: PERSON1_ID,
+        person2Id: PERSON2_ID,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        ...overrides,
+      };
+    }
+
+    it('traverses parent chain recursively', async () => {
+      const parent = makePerson({ personId: PERSON1_ID });
+      const grandparent = makePerson({ personId: PERSON2_ID });
+
+      relationshipRepo.findParentsOf.mockImplementation((id: string) => {
+        if (id === PERSON3_ID)
+          return Promise.resolve([makeRel({ person1Id: PERSON1_ID, person2Id: PERSON3_ID })]);
+        if (id === PERSON1_ID)
+          return Promise.resolve([makeRel({ person1Id: PERSON2_ID, person2Id: PERSON1_ID })]);
+        return Promise.resolve([]);
+      });
+
+      personRepo.findById.mockImplementation((id: string) => {
+        if (id === PERSON1_ID) return Promise.resolve(parent);
+        if (id === PERSON2_ID) return Promise.resolve(grandparent);
+        return Promise.resolve(null);
+      });
+
+      const ancestors = await service.getAncestors(PERSON3_ID);
+      expect(ancestors).toHaveLength(2);
+      expect(ancestors.map((a) => a.personId)).toContain(PERSON1_ID);
+      expect(ancestors.map((a) => a.personId)).toContain(PERSON2_ID);
+    });
+
+    it('respects maxDepth', async () => {
+      relationshipRepo.findParentsOf.mockImplementation((id: string) => {
+        if (id === PERSON3_ID)
+          return Promise.resolve([makeRel({ person1Id: PERSON1_ID, person2Id: PERSON3_ID })]);
+        if (id === PERSON1_ID)
+          return Promise.resolve([makeRel({ person1Id: PERSON2_ID, person2Id: PERSON1_ID })]);
+        return Promise.resolve([]);
+      });
+
+      personRepo.findById.mockImplementation((id: string) => Promise.resolve(makePerson({ personId: id })));
+
+      const ancestors = await service.getAncestors(PERSON3_ID, 1);
+      expect(ancestors).toHaveLength(1);
+    });
+  });
+
+  describe('getDescendants', () => {
+    const PERSON1_ID = '11111111-1111-4111-8111-111111111111';
+    const PERSON2_ID = '22222222-2222-4222-8222-222222222222';
+    const PERSON3_ID = '33333333-3333-4333-8333-333333333333';
+
+    function makeRel(overrides: Partial<Relationship> = {}): Relationship {
+      return {
+        relationshipId: 'rel-123',
+        relationshipType: RelationshipType.PARENT_CHILD,
+        person1Id: PERSON1_ID,
+        person2Id: PERSON2_ID,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        ...overrides,
+      };
+    }
+
+    it('traverses child chain recursively', async () => {
+      relationshipRepo.findChildrenOf.mockImplementation((id: string) => {
+        if (id === PERSON1_ID)
+          return Promise.resolve([makeRel({ person1Id: PERSON1_ID, person2Id: PERSON2_ID })]);
+        if (id === PERSON2_ID)
+          return Promise.resolve([makeRel({ person1Id: PERSON2_ID, person2Id: PERSON3_ID })]);
+        return Promise.resolve([]);
+      });
+
+      personRepo.findById.mockImplementation((id: string) => Promise.resolve(makePerson({ personId: id })));
+
+      const descendants = await service.getDescendants(PERSON1_ID);
+      expect(descendants).toHaveLength(2);
     });
   });
 });

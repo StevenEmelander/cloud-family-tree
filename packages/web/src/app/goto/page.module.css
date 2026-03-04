@@ -1,0 +1,10 @@
+.container {
+  display: flex;
+  justify-content: center;
+  padding: 4rem 1rem;
+}
+
+.loading {
+  color: var(--color-secondary);
+  font-size: 0.875rem;
+}

@@ -252,33 +252,42 @@ export default function AddRelationship({
 
       {showCreate && (
         <div className={styles.createForm}>
-          <input
-            type="text"
-            className={styles.formInput}
-            placeholder="First name *"
-            value={newFirst}
-            onChange={(e) => setNewFirst(e.target.value)}
-            disabled={linking}
-          />
-          <input
-            type="text"
-            className={styles.formInput}
-            placeholder="Last name *"
-            value={newLast}
-            onChange={(e) => setNewLast(e.target.value)}
-            disabled={linking}
-          />
-          <select
-            className={styles.formSelect}
-            value={newGender}
-            onChange={(e) => setNewGender(e.target.value)}
-            disabled={linking}
-          >
-            <option value="MALE">Male</option>
-            <option value="FEMALE">Female</option>
-            <option value="OTHER">Other</option>
-            <option value="UNKNOWN">Unknown</option>
-          </select>
+          <label className={styles.formLabel}>
+            First name *
+            <input
+              type="text"
+              className={styles.formInput}
+              placeholder="First name"
+              value={newFirst}
+              onChange={(e) => setNewFirst(e.target.value)}
+              disabled={linking}
+            />
+          </label>
+          <label className={styles.formLabel}>
+            Last name *
+            <input
+              type="text"
+              className={styles.formInput}
+              placeholder="Last name"
+              value={newLast}
+              onChange={(e) => setNewLast(e.target.value)}
+              disabled={linking}
+            />
+          </label>
+          <label className={styles.formLabel}>
+            Gender
+            <select
+              className={styles.formSelect}
+              value={newGender}
+              onChange={(e) => setNewGender(e.target.value)}
+              disabled={linking}
+            >
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+              <option value="OTHER">Other</option>
+              <option value="UNKNOWN">Unknown</option>
+            </select>
+          </label>
           <div className={styles.createActions}>
             <button
               type="button"

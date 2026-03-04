@@ -171,3 +171,17 @@
 .faqAnswer a:hover {
   color: var(--color-primary-dark);
 }
+
+@media (max-width: 540px) {
+  .page {
+    padding: 1.5rem 0.75rem 3rem;
+  }
+
+  .storyCard {
+    padding: 1rem 1rem 1rem 1.25rem;
+  }
+
+  .faqAnswer {
+    padding: 0 1rem 1rem 2.5rem;
+  }
+}

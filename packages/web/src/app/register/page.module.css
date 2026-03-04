@@ -123,3 +123,9 @@
   font-size: 0.813rem;
   color: var(--color-primary);
 }
+
+@media (max-width: 768px) {
+  .input {
+    font-size: 1rem;
+  }
+}

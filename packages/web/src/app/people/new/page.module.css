@@ -45,7 +45,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   font-size: 0.875rem;
-  background: white;
+  background: var(--color-card);
 }
 
 .input:focus,
@@ -109,4 +109,12 @@
 .btnBack:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .input,
+  .select,
+  .textarea {
+    font-size: 1rem;
+  }
 }

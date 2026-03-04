@@ -112,10 +112,11 @@ export const config = {
   // instead of a custom domain. When enabled: true, you must have a Route 53
   // hosted zone for the domain in the same AWS account.
   // Find your hosted zone ID: aws route53 list-hosted-zones
+  // hostedZoneId is optional — if omitted, CDK will look it up from your AWS credentials
   domain: {
     enabled: false,
     name: 'yourfamily.com',
-    hostedZoneId: 'YOUR_ROUTE53_HOSTED_ZONE_ID',
+    hostedZoneId: '',
   },
 
   // ── Access Control ────────────────────────────────────────────────────────

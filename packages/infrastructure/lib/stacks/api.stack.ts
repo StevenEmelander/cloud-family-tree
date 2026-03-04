@@ -5,9 +5,11 @@ import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import type * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
+import type * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import type * as s3 from 'aws-cdk-lib/aws-s3';
 import type * as sns from 'aws-cdk-lib/aws-sns';
 import type { Construct } from 'constructs';
@@ -47,8 +49,22 @@ export class ApiStack extends cdk.Stack {
 
     const apiSrcDir = path.join(__dirname, '../../../api/src');
 
+    const allTables: dynamodb.Table[] = [
+      tables.people,
+      tables.relationships,
+      tables.artifacts,
+      tables.entries,
+      tables.sources,
+    ];
+
     // Helper to create bundled Lambda functions using NodejsFunction (esbuild)
-    const createLambda = (name: string, handlerPath: string, memorySize = 256, timeout = 30) => {
+    const createLambda = (
+      name: string,
+      handlerPath: string,
+      memorySize = 256,
+      timeout = 30,
+      grantTables: dynamodb.Table[] = allTables,
+    ) => {
       const fn = new NodejsFunction(this, name, {
         functionName: `${config.familyName}Family-${name}`,
         runtime: lambda.Runtime.NODEJS_22_X,
@@ -58,6 +74,7 @@ export class ApiStack extends cdk.Stack {
         memorySize,
         timeout: cdk.Duration.seconds(timeout),
         environment: sharedEnv,
+        logRetention: logs.RetentionDays.ONE_MONTH,
         bundling: {
           minify: true,
           sourceMap: true,
@@ -67,17 +84,15 @@ export class ApiStack extends cdk.Stack {
         },
       });
 
-      // Grant DynamoDB access
-      tables.people.grantReadWriteData(fn);
-      tables.relationships.grantReadWriteData(fn);
-      tables.artifacts.grantReadWriteData(fn);
-      tables.entries.grantReadWriteData(fn);
-      tables.sources.grantReadWriteData(fn);
+      // Grant DynamoDB access only to specified tables
+      for (const table of grantTables) {
+        table.grantReadWriteData(fn);
+      }
       return fn;
     };
 
     // Create Lambda functions
-    const healthFn = createLambda('Health', 'handlers/health');
+    const healthFn = createLambda('Health', 'handlers/health', 256, 30, []);
     const createPersonFn = createLambda('CreatePerson', 'handlers/people/create');
     const getPersonFn = createLambda('GetPerson', 'handlers/people/get');
     const listPeopleFn = createLambda('ListPeople', 'handlers/people/list');
@@ -126,26 +141,29 @@ export class ApiStack extends cdk.Stack {
     const gedzipExportFn = createLambda('GedzipExport', 'handlers/gedcom/export-gedzip', 1024, 600);
     const gedzipUploadUrlFn = createLambda('GedzipUploadUrl', 'handlers/gedcom/upload-gedzip-url');
 
-    // Source CRUD Lambdas
-    const createSourceFn = createLambda('CreateSource', 'handlers/sources/create');
-    const listSourcesFn = createLambda('ListSources', 'handlers/sources/list');
-    const getSourceFn = createLambda('GetSource', 'handlers/sources/get');
-    const updateSourceFn = createLambda('UpdateSource', 'handlers/sources/update');
-    const deleteSourceFn = createLambda('DeleteSource', 'handlers/sources/delete');
+    // Source CRUD Lambdas (only need sources table)
+    const sourceTables = [tables.sources];
+    const createSourceFn = createLambda('CreateSource', 'handlers/sources/create', 256, 30, sourceTables);
+    const listSourcesFn = createLambda('ListSources', 'handlers/sources/list', 256, 30, sourceTables);
+    const getSourceFn = createLambda('GetSource', 'handlers/sources/get', 256, 30, sourceTables);
+    const updateSourceFn = createLambda('UpdateSource', 'handlers/sources/update', 256, 30, sourceTables);
+    const deleteSourceFn = createLambda('DeleteSource', 'handlers/sources/delete', 256, 30, sourceTables);
 
-    // Admin user management Lambdas
-    const listUsersFn = createLambda('ListUsers', 'handlers/admin/list-users');
-    const approveUserFn = createLambda('ApproveUser', 'handlers/admin/approve-user');
-    const deleteUserFn = createLambda('DeleteUser', 'handlers/admin/delete-user');
-    const setUserRoleFn = createLambda('SetUserRole', 'handlers/admin/set-user-role');
-    const requestEditorFn = createLambda('RequestEditor', 'handlers/admin/request-editor');
+    // Admin user management Lambdas (use Cognito, no DynamoDB tables needed)
+    const noTables: dynamodb.Table[] = [];
+    const listUsersFn = createLambda('ListUsers', 'handlers/admin/list-users', 256, 30, noTables);
+    const approveUserFn = createLambda('ApproveUser', 'handlers/admin/approve-user', 256, 30, noTables);
+    const deleteUserFn = createLambda('DeleteUser', 'handlers/admin/delete-user', 256, 30, noTables);
+    const setUserRoleFn = createLambda('SetUserRole', 'handlers/admin/set-user-role', 256, 30, noTables);
+    const requestEditorFn = createLambda('RequestEditor', 'handlers/admin/request-editor', 256, 30, noTables);
 
-    // Entry Lambdas
-    const createEntryFn = createLambda('CreateEntry', 'handlers/entries/create');
-    const listEntriesFn = createLambda('ListEntries', 'handlers/entries/list');
-    const listAllEntriesFn = createLambda('ListAllEntries', 'handlers/entries/list-all');
-    const updateEntryFn = createLambda('UpdateEntry', 'handlers/entries/update');
-    const deleteEntryFn = createLambda('DeleteEntry', 'handlers/entries/delete');
+    // Entry Lambdas (need entries + people tables)
+    const entryTables = [tables.entries, tables.people];
+    const createEntryFn = createLambda('CreateEntry', 'handlers/entries/create', 256, 30, entryTables);
+    const listEntriesFn = createLambda('ListEntries', 'handlers/entries/list', 256, 30, entryTables);
+    const listAllEntriesFn = createLambda('ListAllEntries', 'handlers/entries/list-all', 256, 30, entryTables);
+    const updateEntryFn = createLambda('UpdateEntry', 'handlers/entries/update', 256, 30, entryTables);
+    const deleteEntryFn = createLambda('DeleteEntry', 'handlers/entries/delete', 256, 30, entryTables);
 
     // Grant Cognito admin permissions to admin Lambdas
     const cognitoAdminPolicy = new iam.PolicyStatement({
@@ -334,7 +352,7 @@ export class ApiStack extends cdk.Stack {
     importGedcom.addMethod('POST', new apigateway.LambdaIntegration(gedcomImportFn), authOpts);
 
     const exportGedcom = tree.addResource('export-gedcom');
-    exportGedcom.addMethod('GET', new apigateway.LambdaIntegration(gedcomExportFn));
+    exportGedcom.addMethod('GET', new apigateway.LambdaIntegration(gedcomExportFn), authOpts);
 
     const importGedzip = tree.addResource('import-gedzip');
     importGedzip.addMethod('POST', new apigateway.LambdaIntegration(gedzipImportFn), authOpts);
@@ -392,10 +410,12 @@ export class ApiStack extends cdk.Stack {
       const domainName = config.domain.name;
       const apiDomainName = `api.${domainName}`;
 
-      const hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'HostedZone', {
-        hostedZoneId: config.domain.hostedZoneId,
-        zoneName: domainName,
-      });
+      const hostedZone = config.domain.hostedZoneId
+        ? route53.HostedZone.fromHostedZoneAttributes(this, 'HostedZone', {
+            hostedZoneId: config.domain.hostedZoneId,
+            zoneName: domainName,
+          })
+        : route53.HostedZone.fromLookup(this, 'HostedZone', { domainName });
 
       const apiCertificate = new acm.Certificate(this, 'ApiCertificate', {
         domainName: apiDomainName,

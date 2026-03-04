@@ -19,34 +19,36 @@ function getAttr(attrs: { Name?: string; Value?: string }[] | undefined, name: s
 export class UserAdminService {
   async listUsers(): Promise<AdminUserListItem[]> {
     const result = await cognito.send(new ListUsersCommand({ UserPoolId: USER_POOL_ID }));
+    const rawUsers = result.Users || [];
 
-    const users: AdminUserListItem[] = [];
-    for (const u of result.Users || []) {
-      const groupsResult = await cognito.send(
-        new AdminListGroupsForUserCommand({
-          UserPoolId: USER_POOL_ID,
-          Username: u.Username ?? '',
-        }),
-      );
+    const users = await Promise.all(
+      rawUsers.map(async (u) => {
+        const groupsResult = await cognito.send(
+          new AdminListGroupsForUserCommand({
+            UserPoolId: USER_POOL_ID,
+            Username: u.Username ?? '',
+          }),
+        );
 
-      const group = groupsResult.Groups?.[0]?.GroupName;
-      let role: AdminUserListItem['role'] = 'visitor';
-      if (group === 'admins') role = 'admin';
-      else if (group === 'editors') role = 'editor';
-      else if (group === 'visitors') role = 'visitor';
+        const group = groupsResult.Groups?.[0]?.GroupName;
+        let role: AdminUserListItem['role'] = 'visitor';
+        if (group === 'admins') role = 'admin';
+        else if (group === 'editors') role = 'editor';
+        else if (group === 'visitors') role = 'visitor';
 
-      const editorRequested = getAttr(u.Attributes, 'custom:editorRequested');
-      users.push({
-        userId: u.Username ?? '',
-        email: getAttr(u.Attributes, 'email'),
-        name: getAttr(u.Attributes, 'name'),
-        role,
-        createdAt: u.UserCreateDate?.toISOString() || '',
-        enabled: u.Enabled ?? true,
-        status: u.UserStatus || '',
-        ...(editorRequested ? { editorRequested } : {}),
-      });
-    }
+        const editorRequested = getAttr(u.Attributes, 'custom:editorRequested');
+        return {
+          userId: u.Username ?? '',
+          email: getAttr(u.Attributes, 'email'),
+          name: getAttr(u.Attributes, 'name'),
+          role,
+          createdAt: u.UserCreateDate?.toISOString() || '',
+          enabled: u.Enabled ?? true,
+          status: u.UserStatus || '',
+          ...(editorRequested ? { editorRequested } : {}),
+        };
+      }),
+    );
 
     return users;
   }

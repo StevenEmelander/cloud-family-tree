@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { clearableString } from './schema.utils';
 
 export const createSourceSchema = z.object({
   title: z.string().min(1).max(500).trim(),
@@ -8,9 +9,6 @@ export const createSourceSchema = z.object({
   url: z.string().max(2000).trim().optional(),
   notes: z.string().max(5000).trim().optional(),
 });
-
-const clearableString = (max: number) =>
-  z.union([z.string().max(max).trim(), z.literal('')]).transform((v) => (v === '' ? undefined : v));
 
 export const updateSourceSchema = z.object({
   title: z.string().min(1).max(500).trim().optional(),

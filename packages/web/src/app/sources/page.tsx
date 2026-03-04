@@ -175,6 +175,7 @@ export default function SourcesPage() {
         type="text"
         className={styles.searchInput}
         placeholder="Search sources..."
+        aria-label="Search sources"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />

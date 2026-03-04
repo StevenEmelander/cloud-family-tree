@@ -1,7 +1,6 @@
 import type { Source } from '@cloud-family-tree/shared';
 import { ENTITY_PREFIX, GSI_NAMES } from '@cloud-family-tree/shared';
 import { TableNames } from '../lib/dynamodb';
-import { AppError } from '../middleware/error-handler';
 import { BaseRepository } from './base.repository';
 
 interface SourceRecord extends Record<string, unknown> {
@@ -63,7 +62,7 @@ export class SourceRepository extends BaseRepository {
 
   async delete(sourceId: string): Promise<void> {
     const existing = await this.findById(sourceId);
-    if (!existing) throw new AppError(404, 'Source not found');
+    if (!existing) return; // Already deleted — idempotent
     await this.deleteItem(this.toKey(sourceId));
   }
 

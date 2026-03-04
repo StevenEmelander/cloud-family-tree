@@ -7,7 +7,15 @@
   --color-border: #d6d3d1;
   --color-card: #ffffff;
   --color-muted: #a8a29e;
+  --color-fg-muted: #78716c;
+  --color-danger: #dc2626;
+  --color-surface: #ffffff;
   --radius: 8px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 html {

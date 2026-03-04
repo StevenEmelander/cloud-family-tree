@@ -25,7 +25,7 @@ import {
   getRecordsByTag,
   parseGedcom,
 } from './gedcom7/parser';
-import type { GedcomNode } from './gedcom7/types';
+import type { GedcomNode, GedcomTree } from './gedcom7/types';
 
 // ── Date parsing ──
 
@@ -168,6 +168,7 @@ function mediToArtifactType(medi: string | undefined): ArtifactType {
   }
 }
 
+
 // ── Import Service ──
 
 export class GedcomImportService {
@@ -189,14 +190,137 @@ export class GedcomImportService {
     const tree = parseGedcom(gedcomContent);
 
     // ── Validate GEDCOM 7 version ──
+    const versionError = this.validateVersion(tree);
+    if (versionError) return versionError;
+
+    // ── Phase 1: Parse and deduplicate SOUR records ──
+    const { sourceIdMap, newSources, sourcesSkipped } = await this.parseSources(tree, now);
+
+    // ── Phase 2: Parse INDI records ──
+    const {
+      parsedPeople,
+      pendingEventObjeLinks,
+      warnings: peopleWarnings,
+      errors: peopleErrors,
+    } = this.parsePeople(tree, sourceIdMap, now);
+    warnings.push(...peopleWarnings);
+    errors.push(...peopleErrors);
+
+    // ── Phase 3: Deduplicate people against existing DB ──
+    const personIdMap = new Map<string, string>();
+    for (const { pointer, person } of parsedPeople) {
+      personIdMap.set(pointer, person.personId);
+    }
+    const {
+      newPeople,
+      personUpdates,
+      peopleSkipped,
+      peopleUpdated,
+      matchedExistingIds,
+    } = await this.deduplicatePeople(parsedPeople, personIdMap);
+
+    // ── Phase 4: Parse FAM records -> relationships ──
+    const {
+      relationships,
+      warnings: relWarnings,
+      errors: relErrors,
+    } = this.parseRelationships(tree, personIdMap, now);
+    warnings.push(...relWarnings);
+    errors.push(...relErrors);
+
+    // ── Phase 5: Deduplicate relationships ──
+    const {
+      newRelationships,
+      relationshipsSkipped,
+    } = await this.deduplicateRelationships(relationships, matchedExistingIds);
+
+    // ── Phase 5b: Parse OBJE records -> artifacts ──
+    // Collect OBJE references from INDI records
+    const objePersonLinks: { pointer: string; personId: string; eventTag?: string }[] = [];
+    for (const node of getRecordsByTag(tree, 'INDI')) {
+      const indiPointer = node.xref;
+      if (!indiPointer) continue;
+      const resolvedPersonId = personIdMap.get(indiPointer);
+      if (!resolvedPersonId) continue;
+      for (const objeRef of findChildren(node, 'OBJE')) {
+        if (objeRef.value) {
+          objePersonLinks.push({ pointer: objeRef.value, personId: resolvedPersonId });
+        }
+      }
+      // Also collect OBJE references from dedicated events
+      for (const tag of ['BIRT', 'DEAT', 'BURI', 'CENS', 'IMMI'] as const) {
+        const eventNode = findChild(node, tag);
+        if (!eventNode) continue;
+        for (const objeRef of findChildren(eventNode, 'OBJE')) {
+          if (objeRef.value) {
+            objePersonLinks.push({ pointer: objeRef.value, personId: resolvedPersonId, eventTag: tag });
+          }
+        }
+      }
+    }
+
+    const {
+      newArtifacts,
+      artifactsSkipped,
+      objePointerToFile,
+      warnings: artifactWarnings,
+      errors: artifactErrors,
+    } = await this.parseAndUploadArtifacts(tree, personIdMap, objePersonLinks, mediaFiles, now);
+    warnings.push(...artifactWarnings);
+    errors.push(...artifactErrors);
+
+    // ── Phase 5c: Resolve event-level OBJE pointers to artifactIds ──
+    this.resolveEventObjeLinks(
+      pendingEventObjeLinks,
+      objePersonLinks,
+      objePointerToFile,
+      parsedPeople,
+      personIdMap,
+      newArtifacts,
+    );
+
+    // ── Phase 6: Write to database ──
+    const persistErrors = await this.persistToDatabase(
+      newSources,
+      newPeople,
+      newRelationships,
+      newArtifacts,
+      personUpdates,
+      now,
+    );
+    errors.push(...persistErrors);
+
+    // ── Phase 7: Import metadata.json data (entries + artifact metadata) ──
+    let entriesAdded = 0;
+    if (metadata) {
+      const metaResult = await this.importMetadata(metadata, newArtifacts);
+      entriesAdded = metaResult.entriesAdded;
+      errors.push(...metaResult.errors);
+    }
+
+    return {
+      peopleAdded: newPeople.length,
+      peopleSkipped,
+      peopleUpdated,
+      relationshipsAdded: newRelationships.length,
+      relationshipsSkipped,
+      sourcesAdded: newSources.length,
+      sourcesSkipped,
+      artifactsAdded: newArtifacts.length,
+      artifactsSkipped,
+      ...(entriesAdded > 0 && { entriesAdded }),
+      errors,
+      warnings,
+    };
+  }
+
+  // ── Private methods ──
+
+  private validateVersion(tree: GedcomTree): GedcomImportResult | undefined {
     if (tree.header) {
       const gedcNode = findChild(tree.header, 'GEDC');
       const version = gedcNode ? childValue(gedcNode, 'VERS') : undefined;
       if (!version || !version.startsWith('7')) {
-        errors.push(
-          `Unsupported GEDCOM version "${version ?? 'unknown'}". Only GEDCOM 7.x is supported. ` +
-          'Please convert your file to GEDCOM 7 before importing.',
-        );
         return {
           peopleAdded: 0,
           peopleSkipped: 0,
@@ -207,13 +331,21 @@ export class GedcomImportService {
           sourcesSkipped: 0,
           artifactsAdded: 0,
           artifactsSkipped: 0,
-          errors,
-          warnings,
+          errors: [
+            `Unsupported GEDCOM version "${version ?? 'unknown'}". Only GEDCOM 7.x is supported. ` +
+            'Please convert your file to GEDCOM 7 before importing.',
+          ],
+          warnings: [],
         };
       }
     }
+    return undefined;
+  }
 
-    // ── Phase 1: Parse and deduplicate SOUR records ──
+  private async parseSources(
+    tree: GedcomTree,
+    now: string,
+  ): Promise<{ sourceIdMap: Map<string, string>; newSources: Source[]; sourcesSkipped: number }> {
     const existingSources: Source[] = [];
     for await (const batch of this.sourceRepo.iterateAll()) {
       existingSources.push(...batch);
@@ -223,7 +355,7 @@ export class GedcomImportService {
       if (s.gedcomId) existingSourceGedcomIds.set(s.gedcomId, s);
     }
 
-    const sourceIdMap = new Map<string, string>(); // GEDCOM pointer → sourceId
+    const sourceIdMap = new Map<string, string>();
     const newSources: Source[] = [];
     let sourcesSkipped = 0;
 
@@ -290,10 +422,22 @@ export class GedcomImportService {
       newSources.push(source);
     }
 
-    // ── Phase 2: Parse INDI records ──
-    const personIdMap = new Map<string, string>(); // GEDCOM pointer → personId
+    return { sourceIdMap, newSources, sourcesSkipped };
+  }
+
+  private parsePeople(
+    tree: GedcomTree,
+    sourceIdMap: Map<string, string>,
+    now: string,
+  ): {
+    parsedPeople: { pointer: string; person: Person }[];
+    pendingEventObjeLinks: { pointer: string; eventIndex: number; objePointer: string }[];
+    warnings: string[];
+    errors: string[];
+  } {
+    const warnings: string[] = [];
+    const errors: string[] = [];
     const parsedPeople: { pointer: string; person: Person }[] = [];
-    // Pending OBJE references found under events (resolved after artifacts are created)
     const pendingEventObjeLinks: { pointer: string; eventIndex: number; objePointer: string }[] = [];
 
     for (const node of getRecordsByTag(tree, 'INDI')) {
@@ -472,7 +616,19 @@ export class GedcomImportService {
       }
     }
 
-    // ── Phase 3: Deduplicate people against existing DB ──
+    return { parsedPeople, pendingEventObjeLinks, warnings, errors };
+  }
+
+  private async deduplicatePeople(
+    parsedPeople: { pointer: string; person: Person }[],
+    personIdMap: Map<string, string>,
+  ): Promise<{
+    newPeople: Person[];
+    personUpdates: { id: string; fields: Record<string, unknown> }[];
+    peopleSkipped: number;
+    peopleUpdated: number;
+    matchedExistingIds: Set<string>;
+  }> {
     const existingPeople: Person[] = [];
     for await (const batch of this.personRepo.iterateAll()) {
       existingPeople.push(...batch);
@@ -533,8 +689,18 @@ export class GedcomImportService {
       }
     }
 
-    // ── Phase 4: Parse FAM records → relationships ──
+    return { newPeople, personUpdates, peopleSkipped, peopleUpdated, matchedExistingIds };
+  }
+
+  private parseRelationships(
+    tree: GedcomTree,
+    personIdMap: Map<string, string>,
+    now: string,
+  ): { relationships: Relationship[]; warnings: string[]; errors: string[] } {
+    const warnings: string[] = [];
+    const errors: string[] = [];
     const relationships: Relationship[] = [];
+
     for (const node of getRecordsByTag(tree, 'FAM')) {
       try {
         const husbPtr = childValue(node, 'HUSB');
@@ -608,7 +774,13 @@ export class GedcomImportService {
       }
     }
 
-    // ── Phase 5: Deduplicate relationships ──
+    return { relationships, warnings, errors };
+  }
+
+  private async deduplicateRelationships(
+    relationships: Relationship[],
+    matchedExistingIds: Set<string>,
+  ): Promise<{ newRelationships: Relationship[]; relationshipsSkipped: number }> {
     const existingRelKeys = new Set<string>();
     if (matchedExistingIds.size > 0) {
       const fetched = new Set<string>();
@@ -641,7 +813,25 @@ export class GedcomImportService {
       }
     }
 
-    // ── Phase 5b: Parse OBJE records → artifacts ──
+    return { newRelationships, relationshipsSkipped };
+  }
+
+  private async parseAndUploadArtifacts(
+    tree: GedcomTree,
+    personIdMap: Map<string, string>,
+    objePersonLinks: { pointer: string; personId: string; eventTag?: string }[],
+    mediaFiles: Map<string, Buffer> | undefined,
+    now: string,
+  ): Promise<{
+    newArtifacts: Artifact[];
+    artifactsSkipped: number;
+    objePointerToFile: Map<string, { filePath: string; form: string; medi?: string; caption?: string; source?: string; date?: string; isPrimary?: boolean }>;
+    warnings: string[];
+    errors: string[];
+  }> {
+    const warnings: string[] = [];
+    const errors: string[] = [];
+
     // Build REPO name index for resolving SOUR > REPO pointers
     const repoRecords = new Map<string, string>();
     for (const node of getRecordsByTag(tree, 'REPO')) {
@@ -657,8 +847,12 @@ export class GedcomImportService {
       if (!filePath) continue;
       const formNode = fileNode ? findChild(fileNode, 'FORM') : undefined;
       const form = formNode?.value;
-      const medi = formNode ? childValue(formNode, 'MEDI') : undefined;
-      const caption = fileNode ? childValue(fileNode, 'TITL') : undefined;
+      // MEDI can be a child of FORM (GEDCOM 7 spec) or a sibling of FORM (child of FILE)
+      const medi = (formNode ? childValue(formNode, 'MEDI') : undefined)
+        ?? (fileNode ? childValue(fileNode, 'MEDI') : undefined);
+      // TITL can be a child of FILE (GEDCOM 7 spec) or a child of OBJE (common practice)
+      const caption = (fileNode ? childValue(fileNode, 'TITL') : undefined)
+        ?? childValue(node, 'TITL');
       const date = childValue(node, 'DATE');
       const primTag = childValue(node, '_PRIM');
       const isPrimary = primTag?.toUpperCase() === 'Y';
@@ -676,19 +870,14 @@ export class GedcomImportService {
       objePointerToFile.set(pointer, { filePath, form: form ?? '', medi, caption, source, date, isPrimary });
     }
 
-    // Collect OBJE references from INDI records → person-artifact links
-    const objePersonLinks: { pointer: string; personId: string }[] = [];
+    // Handle inline OBJE (embedded in INDI)
     for (const node of getRecordsByTag(tree, 'INDI')) {
       const indiPointer = node.xref;
       if (!indiPointer) continue;
       const resolvedPersonId = personIdMap.get(indiPointer);
       if (!resolvedPersonId) continue;
       for (const objeRef of findChildren(node, 'OBJE')) {
-        if (objeRef.value) {
-          // Reference to top-level OBJE record
-          objePersonLinks.push({ pointer: objeRef.value, personId: resolvedPersonId });
-        } else if (objeRef.children.length > 0) {
-          // Inline OBJE (embedded in INDI)
+        if (!objeRef.value && objeRef.children.length > 0) {
           const fileNode = findChild(objeRef, 'FILE');
           const filePath = fileNode?.value;
           if (filePath) {
@@ -705,11 +894,34 @@ export class GedcomImportService {
       }
     }
 
+    // Collect OBJE references from FAM records (MARR, DIV events)
+    for (const node of getRecordsByTag(tree, 'FAM')) {
+      const husbPtr = childValue(node, 'HUSB');
+      const wifePtr = childValue(node, 'WIFE');
+      for (const tag of ['MARR', 'DIV'] as const) {
+        const eventNode = findChild(node, tag);
+        if (!eventNode) continue;
+        for (const objeRef of findChildren(eventNode, 'OBJE')) {
+          if (!objeRef.value) continue;
+          const eventTag = tag === 'MARR' ? 'MARR' : 'DIV';
+          // Link to both spouses
+          if (husbPtr) {
+            const pid = personIdMap.get(husbPtr);
+            if (pid) objePersonLinks.push({ pointer: objeRef.value, personId: pid, eventTag });
+          }
+          if (wifePtr) {
+            const pid = personIdMap.get(wifePtr);
+            if (pid) objePersonLinks.push({ pointer: objeRef.value, personId: pid, eventTag });
+          }
+        }
+      }
+    }
+
     // Create artifact records (only if we have media files from GEDZIP)
     const newArtifacts: Artifact[] = [];
     let artifactsSkipped = 0;
     if (mediaFiles && mediaFiles.size > 0) {
-      for (const { pointer, personId } of objePersonLinks) {
+      for (const { pointer, personId, eventTag } of objePersonLinks) {
         const objeInfo = objePointerToFile.get(pointer);
         if (!objeInfo) continue;
 
@@ -726,6 +938,15 @@ export class GedcomImportService {
         const artifactId = uuid();
         const s3Key = `artifacts/${personId}/${artifactId}/${fileName}`;
 
+        // Determine artifact type: event context > MEDI fallback
+        const eventInferredType = eventTag === 'BIRT' ? ArtifactType.BIRTH_RECORD
+          : eventTag === 'DEAT' ? ArtifactType.DEATH_RECORD
+          : eventTag === 'MARR' ? ArtifactType.MARRIAGE_RECORD
+          : eventTag === 'DIV' ? ArtifactType.DIVORCE_RECORD
+          : eventTag === 'CENS' ? ArtifactType.CENSUS_RECORD
+          : eventTag === 'IMMI' ? ArtifactType.IMMIGRATION_RECORD
+          : undefined;
+
         try {
           await s3Client.send(
             new PutObjectCommand({
@@ -739,7 +960,7 @@ export class GedcomImportService {
           newArtifacts.push({
             artifactId,
             personId,
-            artifactType: mediToArtifactType(objeInfo.medi),
+            artifactType: eventInferredType ?? mediToArtifactType(objeInfo.medi),
             s3Bucket: BucketNames.Photos,
             s3Key,
             fileName,
@@ -765,8 +986,18 @@ export class GedcomImportService {
       }
     }
 
-    // ── Phase 5c: Resolve event-level OBJE pointers to artifactIds ──
-    // Build pointer → artifactId map from newly created artifacts
+    return { newArtifacts, artifactsSkipped, objePointerToFile, warnings, errors };
+  }
+
+  private resolveEventObjeLinks(
+    pendingEventObjeLinks: { pointer: string; eventIndex: number; objePointer: string }[],
+    objePersonLinks: { pointer: string; personId: string; eventTag?: string }[],
+    objePointerToFile: Map<string, { filePath: string; form: string; medi?: string; caption?: string; source?: string; date?: string; isPrimary?: boolean }>,
+    parsedPeople: { pointer: string; person: Person }[],
+    personIdMap: Map<string, string>,
+    newArtifacts: Artifact[],
+  ): void {
+    // Build pointer -> artifactId map from newly created artifacts
     const objePointerToArtifactId = new Map<string, string>();
     for (const { pointer: objePtr, personId } of objePersonLinks) {
       const objeInfo = objePointerToFile.get(objePtr);
@@ -809,8 +1040,18 @@ export class GedcomImportService {
       if (artifact.date) evt.date = artifact.date;
       entry.person.events.push(evt);
     }
+  }
 
-    // ── Phase 6: Write to database ──
+  private async persistToDatabase(
+    newSources: Source[],
+    newPeople: Person[],
+    newRelationships: Relationship[],
+    newArtifacts: Artifact[],
+    personUpdates: { id: string; fields: Record<string, unknown> }[],
+    now: string,
+  ): Promise<string[]> {
+    const errors: string[] = [];
+
     if (newSources.length > 0) await this.sourceRepo.batchCreate(newSources);
     if (newPeople.length > 0) await this.personRepo.batchCreate(newPeople);
     if (newRelationships.length > 0) await this.relationshipRepo.batchCreate(newRelationships);
@@ -833,50 +1074,43 @@ export class GedcomImportService {
       }
     }
 
-    // ── Phase 7: Import metadata.json data (entries + artifact metadata) ──
+    return errors;
+  }
+
+  private async importMetadata(
+    metadata: GedzipMetadata,
+    newArtifacts: Artifact[],
+  ): Promise<{ entriesAdded: number; errors: string[] }> {
+    const errors: string[] = [];
     let entriesAdded = 0;
-    if (metadata) {
-      // Import entries
-      if (metadata.entries && metadata.entries.length > 0) {
-        for (const entry of metadata.entries) {
-          try {
-            await this.entryRepo.create(entry);
-            entriesAdded++;
-          } catch (err) {
-            console.error('GEDCOM entry import error:', err);
-            errors.push(`Failed to import entry: ${entry.entryId}`);
-          }
+
+    // Import entries
+    if (metadata.entries && metadata.entries.length > 0) {
+      for (const entry of metadata.entries) {
+        try {
+          await this.entryRepo.create(entry);
+          entriesAdded++;
+        } catch (err) {
+          console.error('GEDCOM entry import error:', err);
+          errors.push(`Failed to import entry: ${entry.entryId}`);
         }
       }
+    }
 
-      // Apply artifact metadata to newly created artifacts
-      if (metadata.artifactMetadata) {
-        for (const artifact of newArtifacts) {
-          const meta = metadata.artifactMetadata[artifact.artifactId];
-          if (meta && Object.keys(meta).length > 0) {
-            try {
-              await this.artifactRepo.update(artifact.artifactId, artifact.personId, { metadata: meta });
-            } catch (err) {
-              console.error('GEDCOM artifact metadata update error:', err);
-            }
+    // Apply artifact metadata to newly created artifacts
+    if (metadata.artifactMetadata) {
+      for (const artifact of newArtifacts) {
+        const meta = metadata.artifactMetadata[artifact.artifactId];
+        if (meta && Object.keys(meta).length > 0) {
+          try {
+            await this.artifactRepo.update(artifact.artifactId, artifact.personId, { metadata: meta });
+          } catch (err) {
+            console.error('GEDCOM artifact metadata update error:', err);
           }
         }
       }
     }
 
-    return {
-      peopleAdded: newPeople.length,
-      peopleSkipped,
-      peopleUpdated,
-      relationshipsAdded: newRelationships.length,
-      relationshipsSkipped,
-      sourcesAdded: newSources.length,
-      sourcesSkipped,
-      artifactsAdded: newArtifacts.length,
-      artifactsSkipped,
-      ...(entriesAdded > 0 && { entriesAdded }),
-      errors,
-      warnings,
-    };
+    return { entriesAdded, errors };
   }
 }

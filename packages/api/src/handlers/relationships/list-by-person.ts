@@ -1,8 +1,10 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { authorize } from '../../middleware/auth';
 import { errorResponse, successResponse } from '../../middleware/response';
+import { PersonService } from '../../services/person.service';
 import { RelationshipService } from '../../services/relationship.service';
 
+const personService = new PersonService();
 const relationshipService = new RelationshipService();
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -11,20 +13,20 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const personId = event.pathParameters?.id;
     if (!personId) return errorResponse(new Error('Missing id parameter'));
 
-    const view = event.queryStringParameters?.view; // 'ancestors' | 'descendants' | undefined
+    const view = event.queryStringParameters?.view;
 
     if (view === 'ancestors') {
-      const ancestors = await relationshipService.getAncestors(personId);
+      const ancestors = await personService.getAncestors(personId);
       return successResponse(200, { items: ancestors, count: ancestors.length });
     }
 
     if (view === 'descendants') {
-      const descendants = await relationshipService.getDescendants(personId);
+      const descendants = await personService.getDescendants(personId);
       return successResponse(200, { items: descendants, count: descendants.length });
     }
 
     if (view === 'family-tree') {
-      const data = await relationshipService.getPersonDetail(personId);
+      const data = await personService.getPersonDetail(personId);
       return successResponse(200, {
         person: data.person,
         items: data.relationships,
